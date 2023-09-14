@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
 builder.Services.AddSingleton<IProductContext, ProductContext>();
 
+builder.Services.AddSingleton<IShoppingCartRepository, ShoppingCartRepository>();
+builder.Services.AddSingleton<IShoppingCartContext, ShoppingCartContext>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
