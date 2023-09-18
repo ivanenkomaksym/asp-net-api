@@ -10,6 +10,7 @@ namespace AspNetApi.Filters
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
     public class ETagFilter : ActionFilterAttribute, IAsyncActionFilter
     {
+
         public override async Task OnActionExecutionAsync(
             ActionExecutingContext executingContext,
             ActionExecutionDelegate next
@@ -30,6 +31,11 @@ namespace AspNetApi.Filters
             }
         }
 
+        public virtual string ComputeHash(object value)
+        {
+            return ETagService.ComputeWithHashFunction(value);
+        }
+
         private void ValidateETagForResponseCaching(ActionExecutedContext executedContext)
         {
             if (executedContext.Result == null)
@@ -46,7 +52,7 @@ namespace AspNetApi.Filters
             //var etag = GenerateEtagFromLastModified(result.LastModified);
 
             // generates ETag from the entire response Content
-            var etag = ETagService.ComputeWithHashFunction(result);
+            var etag = ComputeHash(result);
 
             if (request.Headers.ContainsKey(HeaderNames.IfNoneMatch))
             {
@@ -63,6 +69,7 @@ namespace AspNetApi.Filters
 
             // add ETag response header
             response.Headers.Add(HeaderNames.ETag, new[] { etag });
+            response.Headers.Add(HeaderNames.CacheControl, "private");
         }
     }
 }

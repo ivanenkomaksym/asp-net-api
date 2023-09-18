@@ -1,4 +1,5 @@
-﻿using AspNetApi.Models;
+﻿using AspNetApi.Filters;
+using AspNetApi.Models;
 using AspNetApi.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -21,6 +22,7 @@ namespace AspNetApi.Controllers
         [HttpGet(Name = "GetAllShoppingCarts")]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ShoppingCart), (int)HttpStatusCode.OK)]
+        [ETagFilter]
         public async Task<ActionResult<IEnumerable<ShoppingCart>>> GetAll()
         {
             var shoppingCarts = await _shoppingCartRepository.GetShoppingCarts();
@@ -31,6 +33,7 @@ namespace AspNetApi.Controllers
         [HttpGet("{customerId}", Name = "GetShoppingCart")]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         [ProducesResponseType(typeof(ShoppingCart), (int)HttpStatusCode.OK)]
+        [VersionBasedETagFilter]
         public async Task<ActionResult<ShoppingCart>> Get(Guid customerId)
         {
             var shoppingCart = await _shoppingCartRepository.GetShoppingCart(customerId);
