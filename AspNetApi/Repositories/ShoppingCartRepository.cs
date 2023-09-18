@@ -47,8 +47,11 @@ namespace AspNetApi.Repositories
 
             if (index == -1)
                 throw new ArgumentOutOfRangeException();
-            
+
+            var newVersionNr = (ushort)(_context.ShoppingCarts[index].Version.Number + 1);
+
             _context.ShoppingCarts[index] = shoppingCart;
+            _context.ShoppingCarts[index].Version.Number = newVersionNr;
 
             return Task.FromResult(shoppingCart);
         }

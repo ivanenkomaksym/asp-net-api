@@ -1,4 +1,6 @@
-﻿namespace AspNetApi.Models
+﻿using System.Text.Json.Serialization;
+
+namespace AspNetApi.Models
 {
     public class ShoppingCart
     {
@@ -22,5 +24,8 @@
 
             }
         }
+
+        [JsonIgnore]
+        public Version Version { get; set; } = new Version { Number = 0 };
     }
 }
