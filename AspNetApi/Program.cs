@@ -1,7 +1,16 @@
 using AspNetApi.Data;
 using AspNetApi.Repositories;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 // Add services to the container.
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
@@ -17,6 +26,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -24,7 +35,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add(HeaderNames.ContentSecurityPolicy, new StringValues("default-src 'self'"));
+    context.Response.Headers.Add(HeaderNames.XContentTypeOptions, new StringValues("nosniff"));
+    context.Response.Headers.Add(HeaderNames.XFrameOptions, new StringValues("SAMEORIGIN"));
+    context.Response.Headers.Add(HeaderNames.XXSSProtection, new StringValues("1; mode=block"));
+    await next();
+});
+
+app.UseHsts();
 app.UseHttpsRedirection();
+
+app.UseCors(builder =>
+{
+    builder.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
+});
 
 app.UseAuthorization();
 
