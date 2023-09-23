@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspnetapi-pod
+  labels:
+    app: aspnetapi
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: aspnetapi-app
+  template:
+    metadata: 
+      labels:
+        app: aspnetapi-app
+    spec:
+      containers:
+        - name: aspnetapi
+          image: aspnetapi
+          env:
+            - name: "ASPNETCORE_ENVIRONMENT"
+              value: "Staging"
+            - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
+              value: "true"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
