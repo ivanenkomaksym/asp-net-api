@@ -1,0 +1,7 @@
+version: '3.4'
+
+services:
+  aspnetapi:
+    container_name: aspnetapi
+    ports:
+      - "80:80"
