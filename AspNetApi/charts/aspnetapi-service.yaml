@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: aspnetapi
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: aspnetapi-app
   ports:
