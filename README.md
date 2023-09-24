@@ -1,4 +1,5 @@
 
+
 # asp-net-api
 
 TODO
@@ -22,25 +23,7 @@ TODO
 
 TODO
 
-
-## How to run this sample
-
-You can run this sample in 3 different ways:
-1. Run .NET app locally.
-2. Run in Kubernetes.
-3. Using [Helm chart](https://github.com/helm/helm).
-
-### Run local
-
-1. In **AspNetApi** folder
-```
-dotnet run
-```
-3. Navigate to [http://localhost:80/](http://localhost/) and [http://localhost:80/swagger](http://localhost/swagger)
-
-![Index page](AspNetApi/docs/swagger-page.png?raw=true "Swagger page")
-
-### Run in Kubernetes behind Ingress
+## Deploying ASP.NET applications in Kubernetes
 
 ASP.NET WebApi application is deployed in a reverse-proxy environment (Kubernetes). Proxy servers, load balancers, and other network appliances often obscure information about the request before it reaches the app:
 
@@ -53,10 +36,79 @@ We'll letting the NGINX ingress controller handle SSL/TLS offloading, so we want
 
 ![Alt text](AspNetApi/docs/ingress-routing.png?raw=true "Ingress Routing")
 
-1. Start Docker
-2. Navigate to **\asp-net-api\AspNetApi\charts**
-3. Start Minikube:
+### How to configure HTTPS for Ingress
+1. **Generate a Self-Signed Certificate:**
+Run the following commands to generate a self-signed certificate:
+```bash
+# Generate a private key and certificate signing request (CSR)
+openssl req -newkey rsa:2048 -nodes -keyout tls.key -out tls.csr -subj "/CN=aspnetapi.internal"
+
+# Generate a self-signed certificate from the CSR
+openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
 ```
+`"C:\Program Files\Git\usr\bin\openssl"` can be reused from Git.
+
+These commands will create two files: `tls.key` (the private key) and `tls.crt` (the self-signed certificate).
+
+2. **Encode certificate and key:**
+To encode the certificate and private key content in base64, you can use the following commands:
+```bash
+# Encode the certificate
+base64 -w 0 -i tls.crt
+
+# Encode the private key
+base64 -w 0 -i tls.key
+```
+`"C:\Program Files\Git\usr\bin\base64"` can be reused from Git.
+The `-w 0` option ensures that there are no line breaks in the base64-encoded output.
+
+3. **Create a Kubernetes Secret YAML**
+Create your Secret YAML to include the correctly generated base64-encoded content for both the certificate and private key. Your Secret YAML should look like this:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+data:
+  tls.crt: |
+    <base64-encoded-certificate>
+  tls.key: |
+    <base64-encoded-private-key>
+type: kubernetes.io/tls
+```
+Replace `<base64-encoded-certificate>` and `<base64-encoded-private-key>` with the content you obtained from the previous step, ensuring that each block is properly indented with spaces.
+
+4. **Apply the Updated Secret:**
+Apply the updated Secret configuration to your Kubernetes cluster:
+```bash
+kubectl apply -f aspnetapi-secret.yaml
+```
+This will create a Kubernetes Secret named `aspnetapi-secret` with your self-signed certificate and private key.
+    
+
+Now you have a Kubernetes Secret containing a self-signed certificate that you can use in your Ingress configuration for testing purposes with the domain "aspnetapi.internal." Remember that self-signed certificates are not trusted by browsers and should not be used in production environments, but they are suitable for testing and development.
+
+## How to run this sample
+
+You can run this sample in 3 different ways:
+1. Run .NET app locally.
+2. Run in Kubernetes.
+3. Using [Helm chart](https://github.com/helm/helm).
+
+### Run local
+In **AspNetApi** folder run:
+```bash
+dotnet run
+```
+Navigate to [http://localhost:80/](http://localhost/) and [http://localhost:80/swagger](http://localhost/swagger)
+
+![Index page](AspNetApi/docs/swagger-page.png?raw=true "Swagger page")
+
+### Run in Kubernetes
+1. **Start Docker**
+2. **Navigate to asp-net-api\AspNetApi\charts**
+3. **Start Minikube:**
+```bash
 minikube start
 minikube docker-env
 minikube -p minikube docker-env --shell powershell | Invoke-Expression
@@ -64,29 +116,75 @@ minikube -p minikube docker-env --shell powershell | Invoke-Expression
 # for cmd:
 # @for /f "tokens=*" %i in ('minikube -p minikube docker-env --shell cmd') do @%i
 ```
-4. Deploy:
-```
+4. **Deploy**:
+```bash
 kubectl apply -f aspnetapi.yaml
 kubectl apply -f aspnetapi-service.yaml
 kubectl apply -f aspnetapi-ingress.yaml
 ```
-5. Start Minikube dashboard:
-```
+5. **Start Minikube dashboard**:
+```bash
 minikube dashboard
 ```
-6. Start Minikube tunnel:
-```
+6. **Start Minikube tunnel**:
+```bash
 minikube tunnel
 ```
-7. In another command prompt ssh to minikube:
-```
+7. **Access minikube VM**:
+   
+In another command prompt execute this command:
+```bash
 minikube ssh
 ```
-8. **curl** to API:
+8. **Access API**:
+
+Access via HTTP:
+```bash
+curl http://aspnetapi.internal
 ```
-curl 192.168.49.2
+Example output:
+```bash
+Hello World!---As the application sees it
+HttpContext.Connection.RemoteIpAddress : 192.168.49.2
+HttpContext.Connection.RemoteIpPort : 0
+HttpContext.Request.Scheme : http
+HttpContext.Request.Host : aspnetapi.internal
+
+---Request Headers starting with X
+Request-Header X-Request-ID: 3b93cfa7f2295e70e504165d1c21b23c
+Request-Header X-Real-IP: 192.168.49.2
+Request-Header X-Original-Proto: http
+Request-Header X-Forwarded-Host: aspnetapi.internal
+Request-Header X-Forwarded-Port: 80
+Request-Header X-Forwarded-Scheme: http
+Request-Header X-Scheme: http
+Request-Header X-Original-For: [::ffff:10.244.0.111]:40148
 ```
 
+And through HTTPS:
+```bash
+curl --insecure https://aspnetapi.internal
+```
+`--insecure` option ignores self-signed certificate warning.
+Example output:
+```bash
+Hello World!---As the application sees it
+HttpContext.Connection.RemoteIpAddress : 192.168.49.2
+HttpContext.Connection.RemoteIpPort : 0
+HttpContext.Request.Scheme : https
+HttpContext.Request.Host : aspnetapi.internal
+
+---Request Headers starting with X
+Request-Header X-Request-ID: 8caadcda122b7344734da850cd493506
+Request-Header X-Real-IP: 192.168.49.2
+Request-Header X-Original-Proto: http
+Request-Header X-Forwarded-Host: aspnetapi.internal
+Request-Header X-Forwarded-Port: 443
+Request-Header X-Forwarded-Scheme: https
+Request-Header X-Scheme: https
+Request-Header X-Original-For: [::ffff:10.244.0.111]:40256
+```
+Note the difference in `X-Forwarded-Port` and `X-Forwarded-Scheme`.
 ### Using Helm chart
 
 TODO
@@ -95,3 +193,5 @@ TODO
 [Setting environment variables for ASP.NET Core apps in a Helm chart](https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-5-setting-environment-variables-in-a-helm-chart/)
 
 [Configure ASP.NET Core to work with proxy servers and load balancers](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer)
+
+[How to use Kubernetes Ingress on an ASP.NET Core app](https://www.yogihosting.com/kubernetes-ingress-aspnet-core/)
