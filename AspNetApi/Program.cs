@@ -1,16 +1,9 @@
 using AspNetApi.Data;
 using AspNetApi.Repositories;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-});
 
 builder.Services.AddHealthChecks();
 
@@ -29,8 +22,6 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 app.UseHttpLogging();
-
-app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -62,20 +53,24 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapGet("/", async context =>
     {
-        await context.Response.WriteAsync("Hello World!");
-
         //Output the relevant properties as the framework sees it
-        await context.Response.WriteAsync($"---As the application sees it{Environment.NewLine}");
+        await context.Response.WriteAsync($"---As the application sees it---{Environment.NewLine}");
         await context.Response.WriteAsync($"HttpContext.Connection.RemoteIpAddress : {context.Connection.RemoteIpAddress}{Environment.NewLine}");
         await context.Response.WriteAsync($"HttpContext.Connection.RemoteIpPort : {context.Connection.RemotePort}{Environment.NewLine}");
         await context.Response.WriteAsync($"HttpContext.Request.Scheme : {context.Request.Scheme}{Environment.NewLine}");
         await context.Response.WriteAsync($"HttpContext.Request.Host : {context.Request.Host}{Environment.NewLine}");
 
-        //Output relevant request headers (starting with an X)
-        await context.Response.WriteAsync($"{Environment.NewLine}---Request Headers starting with X{Environment.NewLine}");
-        foreach (var header in context.Request.Headers.Where(h => h.Key.StartsWith("X", StringComparison.OrdinalIgnoreCase)))
+        //Output relevant request headers
+        await context.Response.WriteAsync($"{Environment.NewLine}---Request Headers---{Environment.NewLine}");
+        foreach (var header in context.Request.Headers)
         {
-            await context.Response.WriteAsync($"Request-Header {header.Key}: {header.Value}{Environment.NewLine}");
+            await context.Response.WriteAsync($"{header.Key}: {header.Value}{Environment.NewLine}");
+        }
+
+        await context.Response.WriteAsync($"{Environment.NewLine}---Response Headers---{Environment.NewLine}");
+        foreach (var header in context.Response.Headers)
+        {
+            await context.Response.WriteAsync($"{header.Key}: {header.Value}{Environment.NewLine}");
         }
     });
 });
