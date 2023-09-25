@@ -1,3 +1,4 @@
+
 # asp-net-api
 
 TODO
@@ -133,6 +134,48 @@ Request-Header X-Forwarded-Proto: https
 Request-Header X-Forwarded-Scheme: https
 Request-Header X-Scheme: https
 ```
+### Strict-Transport-Security (HSTS)
+[HTTP Strict Transport Security (HSTS)](https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html) is an opt-in security enhancement that's specified by a web app through the use of a response header. When a [browser that supports HSTS](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html#browser-support) receives this header:
+
+-   The browser stores configuration for the domain that prevents sending any communication over HTTP. The browser forces all communication over HTTPS.
+-   The browser prevents the user from using untrusted or invalid certificates. The browser disables prompts that allow a user to temporarily trust such a certificate.
+
+`UseHsts` isn't recommended in development because the HSTS settings are highly cacheable by browsers. By default, `UseHsts` excludes the local loopback address.
+`UseHsts` excludes the following loopback hosts:
+
+-   `localhost` : The IPv4 loopback address.
+-   `127.0.0.1` : The IPv4 loopback address.
+-   `[::1]` : The IPv6 loopback address.
+
+#### Testing UseHsts Locally
+Edit your hosts file: `C:\Windows\System32\drivers\etc\hosts`
+```csharp
+127.0.0.1 myweb.local
+```
+Update `launchSettings.json`:
+```json
+    "https": {
+        "commandName": "Project",
+        "launchBrowser": true,
+        "launchUrl": "swagger",
+        "environmentVariables": {
+            "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "dotnetRunMessages": true,
+        "applicationUrl": "https://myweb.local:7280;http://myweb.local:5072"
+    },
+```
+When executing `https://myweb.local:7280/`
+```bash
+---Response Headers---
+Date: Mon, 25 Sep 2023 12:00:09 GMT
+Server: Kestrel
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=2592000
+```
 ## How to run this sample
 
 You can run this sample in 3 different ways:
@@ -189,21 +232,33 @@ curl http://aspnetapi.internal
 ```
 Example output:
 ```bash
-Hello World!---As the application sees it
+---As the application sees it---
 HttpContext.Connection.RemoteIpAddress : 192.168.49.2
 HttpContext.Connection.RemoteIpPort : 0
 HttpContext.Request.Scheme : http
 HttpContext.Request.Host : aspnetapi.internal
 
----Request Headers starting with X
-Request-Header X-Request-ID: 3b93cfa7f2295e70e504165d1c21b23c
-Request-Header X-Real-IP: 192.168.49.2
-Request-Header X-Original-Proto: http
-Request-Header X-Forwarded-Host: aspnetapi.internal
-Request-Header X-Forwarded-Port: 80
-Request-Header X-Forwarded-Scheme: http
-Request-Header X-Scheme: http
-Request-Header X-Original-For: [::ffff:10.244.0.111]:40148
+---Request Headers---
+Accept: */*
+Host: aspnetapi.internal
+User-Agent: curl/7.81.0
+X-Request-ID: c3ef8ae5d2b4568298b8b9eca0f5b01a
+X-Real-IP: 192.168.49.2
+X-Original-Proto: http
+X-Forwarded-Host: aspnetapi.internal
+X-Forwarded-Port: 80
+X-Forwarded-Scheme: http
+X-Scheme: http
+X-Original-For: [::ffff:10.244.0.115]:54468
+
+---Response Headers---
+Date: Mon, 25 Sep 2023 12:44:04 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
 ```
 
 And through HTTPS:
@@ -213,23 +268,56 @@ curl --insecure https://aspnetapi.internal
 `--insecure` option ignores self-signed certificate warning.
 Example output:
 ```bash
-Hello World!---As the application sees it
+---As the application sees it---
 HttpContext.Connection.RemoteIpAddress : 192.168.49.2
 HttpContext.Connection.RemoteIpPort : 0
 HttpContext.Request.Scheme : https
 HttpContext.Request.Host : aspnetapi.internal
 
----Request Headers starting with X
-Request-Header X-Request-ID: 8caadcda122b7344734da850cd493506
-Request-Header X-Real-IP: 192.168.49.2
-Request-Header X-Original-Proto: http
-Request-Header X-Forwarded-Host: aspnetapi.internal
-Request-Header X-Forwarded-Port: 443
-Request-Header X-Forwarded-Scheme: https
-Request-Header X-Scheme: https
-Request-Header X-Original-For: [::ffff:10.244.0.111]:40256
+---Request Headers---
+Accept: */*
+Host: aspnetapi.internal
+User-Agent: curl/7.81.0
+X-Request-ID: f76b6e123fe553a4c85b4fc276caf506
+X-Real-IP: 192.168.49.2
+X-Original-Proto: http
+X-Forwarded-Host: aspnetapi.internal
+X-Forwarded-Port: 443
+X-Forwarded-Scheme: https
+X-Scheme: https
+X-Original-For: [::ffff:10.244.0.115]:54468
+
+---Response Headers---
+Date: Mon, 25 Sep 2023 12:44:27 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
 ```
 Note the difference in `X-Forwarded-Port` and `X-Forwarded-Scheme`.
+
+To see header info from Ingress controller, execute
+```
+curl -I --insecure https://aspnetapi.internal/
+```
+Example output:
+```bash
+HTTP/2 405
+date: Mon, 25 Sep 2023 12:44:48 GMT
+allow: GET
+content-security-policy: default-src 'self'
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-xss-protection: 1; mode=block
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+```
+Note `strict-transport-security` added by Ingress, not ASP.NET application itself, according to `annotations` in `aspnetapi=ingress.yaml`:
+```yaml
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+        more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+```
 ### Using Helm chart
 
 TODO
@@ -240,3 +328,7 @@ TODO
 [Configure ASP.NET Core to work with proxy servers and load balancers](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer)
 
 [How to use Kubernetes Ingress on an ASP.NET Core app](https://www.yogihosting.com/kubernetes-ingress-aspnet-core/)
+
+[Enforce HTTPS in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/enforcing-ssl)
+
+[How to Implement HSTS header in ASP.Net Core 6.0?](https://stackoverflow.com/questions/73376095/how-to-implement-hsts-header-in-asp-net-core-6-0)
