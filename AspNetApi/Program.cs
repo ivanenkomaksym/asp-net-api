@@ -35,7 +35,7 @@ app.Use(async (context, next) =>
     context.Response.Headers.Add(HeaderNames.ContentSecurityPolicy, new StringValues("default-src 'self'"));
     context.Response.Headers.Add(HeaderNames.XContentTypeOptions, new StringValues("nosniff"));
     context.Response.Headers.Add(HeaderNames.XFrameOptions, new StringValues("SAMEORIGIN"));
-    context.Response.Headers.Add(HeaderNames.XXSSProtection, new StringValues("1; mode=block"));
+    context.Response.Headers.Add("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
     await next();
 });
 
