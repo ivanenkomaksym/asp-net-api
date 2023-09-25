@@ -1,5 +1,3 @@
-
-
 # asp-net-api
 
 TODO
@@ -87,7 +85,54 @@ This will create a Kubernetes Secret named `aspnetapi-secret` with your self-sig
     
 
 Now you have a Kubernetes Secret containing a self-signed certificate that you can use in your Ingress configuration for testing purposes with the domain "aspnetapi.internal." Remember that self-signed certificates are not trusted by browsers and should not be used in production environments, but they are suitable for testing and development.
+### How to configure ASP.NET Core to work with proxy servers and load balancers
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED` enables ForwardedHeaders middleware, so the application knows it's behind a reverse-proxy (in this case an NGINX ingress controller).
+The middleware updates:
 
+-   [HttpContext.Connection.RemoteIpAddress](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.connectioninfo.remoteipaddress#microsoft-aspnetcore-http-connectioninfo-remoteipaddress): Set using the `X-Forwarded-For` header value. Additional settings influence how the middleware sets `RemoteIpAddress`. For details, see the [Forwarded Headers Middleware options](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-7.0#forwarded-headers-middleware-options). The consumed values are removed from `X-Forwarded-For`, and the old values are persisted in `X-Original-For`. The same pattern is applied to the other headers, `Host` and `Proto`.
+-   [HttpContext.Request.Scheme](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.httprequest.scheme#microsoft-aspnetcore-http-httprequest-scheme): Set using the [`X-Forwarded-Proto`](https://developer.mozilla.org/docs/Web/HTTP/Headers/X-Forwarded-Proto) header value.
+-   [HttpContext.Request.Host](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.httprequest.host#microsoft-aspnetcore-http-httprequest-host): Set using the `X-Forwarded-Host` header value.
+
+This option is set in `aspnetapi.yaml`
+```yaml
+            - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
+              value: "true"
+```
+With this option set `HttpContext` is automatically filled in from X headers:
+```bash
+HttpContext.Connection.RemoteIpAddress : 192.168.49.2
+HttpContext.Connection.RemoteIpPort : 0
+HttpContext.Request.Scheme : https
+HttpContext.Request.Host : aspnetapi.internal
+
+---Request Headers starting with X
+Request-Header X-Request-ID: d20b68596e9eda93ea2f88e601e32b12
+Request-Header X-Real-IP: 192.168.49.2
+Request-Header X-Original-Proto: http
+Request-Header X-Forwarded-Host: aspnetapi.internal
+Request-Header X-Forwarded-Port: 443
+Request-Header X-Forwarded-Scheme: https
+Request-Header X-Scheme: https
+Request-Header X-Original-For: [::ffff:10.244.0.115]:35100
+```
+
+Without this option X headers are still passed, but `HttpContext` is not automatically updated:
+```bash
+HttpContext.Connection.RemoteIpAddress : ::ffff:10.244.0.115
+HttpContext.Connection.RemoteIpPort : 53636
+HttpContext.Request.Scheme : http
+HttpContext.Request.Host : aspnetapi.internal
+
+---Request Headers starting with X
+Request-Header X-Request-ID: 7bf8a1513ea4f8b34681f4d9e49dbca6
+Request-Header X-Real-IP: 192.168.49.2
+Request-Header X-Forwarded-For: 192.168.49.2
+Request-Header X-Forwarded-Host: aspnetapi.internal
+Request-Header X-Forwarded-Port: 443
+Request-Header X-Forwarded-Proto: https
+Request-Header X-Forwarded-Scheme: https
+Request-Header X-Scheme: https
+```
 ## How to run this sample
 
 You can run this sample in 3 different ways:
