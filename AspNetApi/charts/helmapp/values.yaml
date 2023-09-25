@@ -1,15 +1,10 @@
-# global values
-global:
-  env: 
-    "ASPNETCORE_ENVIRONMENT": "Staging"
-    "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true"
-
 aspnetapi:
 
   replicaCount: 1
 
-  env: 
+  env:
     "ASPNETCORE_ENVIRONMENT": "Staging"
+    # This will enable ForwarHeaders middleware, so the application knows it’s behind a reverse-proxy (in this case an NGINX ingress controller).
     "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true"
 
   image:
@@ -24,10 +19,12 @@ aspnetapi:
   ingress:
     enabled: true
     annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      # Make sure to include Strict-Transport-Security response header by Ingress.
       nginx.ingress.kubernetes.io/configuration-snippet: |
-        more_set_headers "Request-Id: $req_id";
+          more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
     hosts:
-      - host: "aspnetapi"
+      - host: "aspnetapi.internal"
         paths: 
             - path: /
               pathType: ImplementationSpecific

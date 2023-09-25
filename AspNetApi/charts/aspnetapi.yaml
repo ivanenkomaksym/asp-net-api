@@ -16,10 +16,11 @@ spec:
     spec:
       containers:
         - name: aspnetapi
-          image: ivanenkomak/aspnetapi:latest
+          image: aspnetapi:latest
           env:
             - name: "ASPNETCORE_ENVIRONMENT"
               value: "Staging"
+            # This will enable ForwarHeaders middleware, so the application knows it’s behind a reverse-proxy (in this case an NGINX ingress controller).
             - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
               value: "true"
           imagePullPolicy: IfNotPresent
