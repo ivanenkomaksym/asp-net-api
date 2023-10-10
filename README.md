@@ -1,13 +1,20 @@
-
 # asp-net-api
 
-TODO
+This repository serves as a comprehensive demonstration of various web service features and best practices. It showcases strategies for optimizing response caching, robust header usage, and security configurations.
 
 ## Features
 
-* TODO
-
-![Alt text](AspNetApi/docs/ingress-routing.png?raw=true "Ingress Routing")
+1.  **Response Caching Strategies:** Demonstrates effective response caching strategies, utilizing techniques like `ETag`, `If-None-Match`, and `Cache-Control` headers to improve performance and reduce unnecessary data transfers.
+    
+2.  **HTTP Security Headers:** Integrates essential HTTP security headers such as Content Security Policy (CSP), X-Content-Type-Options, and X-Frame-Options to enhance the security posture of your web service.
+    
+3.  **HTTPS Redirection and HSTS:** Implements HTTPS redirection and enforces HTTP Strict Transport Security (HSTS) to ensure secure communication, protecting against potential security threats.
+    
+4.  **Proxy Server and Load Balancer Configuration:** Provides guidance on configuring [ASP.NET](http://ASP.NET) Core to seamlessly work with proxy servers and load balancers, enabling smooth operation in complex network environments.
+    
+5.  **Containerization with Docker:** Includes Dockerfiles and Docker Compose configurations to containerize the sample microservice, making it easily deployable and scalable.
+    
+6.  **Kubernetes Deployment:** Offers Kubernetes deployment manifests and Helm charts for streamlined deployment of the microservice to a Kubernetes cluster, simplifying orchestration and management.
 
 ## Dependencies
 [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
@@ -18,9 +25,36 @@ TODO
 
 [Helm](https://helm.sh/docs/intro/install/)
 
-## API
+## Caching response
 
-TODO
+An ETag is a unique identifier that represents the current state of a resource. When a client makes a request to a server for a resource, the server includes an ETag header in the response. The client can then cache the resource and, on subsequent requests, include the ETag in the If-None-Match header.
+
+If the resource hasn’t changed, the server will respond with a 304 Not Modified status code and no body. This allows the client to serve the cached version of the resource, which saves time and bandwidth.
+
+If you forget to include the ETag header in your responses, clients won’t be able to take advantage of this caching optimization. So, make sure to always include ETags in your REST API responses!
+
+One straightforward approach is to compute the ETag just before sending it to the client via the API. The computation method can be as simple as using the LastModified timestamp or generating a hash function based on the response body content.
+
+Since we generate an ETag once the result is prepared, it doesn’t significantly impact the functionality of the API. We still perform a database READ, process it, and prepare a result. However, by not immediately writing the content to the response stream from the Server, we can potentially save the Server’s response bandwidth. This practice is referred to as a “shallow ETag.”
+
+1.  We calculate the ETag string based on the content of the result, but only for successful GET requests (those with a 200 OK response).
+2.  In this step, we take the result object and generate the ETag from it using a chosen method, such as hashing or another developer’s choice.
+3.  We then examine if there is an ETag included in the request.
+4.  If an ETag is found, we compare it to the computed ETag to determine if they match. If they match, it means the data hasn’t been modified.
+5.  When the tags match, we respond with a “Not Modified” status.
+6.  If the tags don’t match, we include the computed ETag in the response header and allow the response to be sent to the client.
+![Alt text](AspNetApi/docs/etag.png?raw=true "If-None-Match and ETag")
+
+Follow these steps to test response caching:
+1. In **Postman** or **Swagger** execute **GET http://localhost:80/api/ShoppingCart**
+2. Copy the value of **ETag** in response headers
+3. In the same request paste copied **ETag** value into new **If-None-Match** request header
+4. This time WebApi must respond with empty content and **304 Not Modified** status
+5. Now copy the body response received in step 1
+6. Execute **PUT http://localhost:80/api/ShoppingCart** and paste the body
+7. Modify some content, e.g. change **quantity** to 2
+8. Repeat step 3
+9. This time the response is different, thus current **ETag** didn't match with provided **If-None-Match** value, so new response with new **ETag** value is returned
 
 ## Deploying ASP.NET applications in Kubernetes
 
@@ -323,6 +357,12 @@ Note `strict-transport-security` added by Ingress, not ASP.NET application itsel
 TODO
 
 ## References
+[REST API Caching Best Practices](https://climbtheladder.com/10-rest-api-caching-best-practices/)
+
+[How to build a simple ETag in ASP.NET Core](https://referbruv.com/blog/how-to-build-a-simple-etag-in-aspnet-core/)
+
+[The Differences between Shared and Private Caching](https://hackernoon.com/the-differences-between-shared-and-private-caching)
+
 [Setting environment variables for ASP.NET Core apps in a Helm chart](https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-5-setting-environment-variables-in-a-helm-chart/)
 
 [Configure ASP.NET Core to work with proxy servers and load balancers](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer)
