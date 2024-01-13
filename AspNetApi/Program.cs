@@ -1,3 +1,4 @@
+using AspNetApi.Converters;
 using AspNetApi.Data;
 using AspNetApi.Repositories;
 using Microsoft.Extensions.Primitives;
@@ -6,6 +7,7 @@ using Microsoft.Net.Http.Headers;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
+builder.Services.AddSwaggerGen();
 
 // Add services to the container.
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
@@ -17,7 +19,9 @@ builder.Services.AddSingleton<IShoppingCartContext, ShoppingCartContext>();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.ConfigureOptions<ConfigureJsonOptions>();
 
 var app = builder.Build();
 
