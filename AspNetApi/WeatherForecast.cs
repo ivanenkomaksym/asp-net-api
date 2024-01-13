@@ -1,5 +1,9 @@
+using AspNetApi.Converters;
+using System.Text.Json.Serialization;
+
 namespace AspNetApi
 {
+    [JsonConverter(typeof(WeatherForecastConverter))]
     public class WeatherForecast
     {
         public DateOnly Date { get; set; }
