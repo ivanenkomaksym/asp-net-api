@@ -11,10 +11,12 @@ This repository serves as a comprehensive demonstration of various web service f
 3.  **HTTPS Redirection and HSTS:** Implements HTTPS redirection and enforces HTTP Strict Transport Security (HSTS) to ensure secure communication, protecting against potential security threats.
     
 4.  **Proxy Server and Load Balancer Configuration:** Provides guidance on configuring [ASP.NET](http://ASP.NET) Core to seamlessly work with proxy servers and load balancers, enabling smooth operation in complex network environments.
+
+5.  **Inject a service into a System.Text.Json converter:** Shows how to add a dummy JSON converter to expose **IServiceProvider** on the **JsonSerializerOptions**. If you want to achieve the same in your integration tests you must manually include **ServiceProviderDummyConverter** in **JsonSerializerOptions** when deserializing from JSON (example in **AspNetApi.IntegrationTests.BasicTests**).
     
-5.  **Containerization with Docker:** Includes Dockerfiles and Docker Compose configurations to containerize the sample microservice, making it easily deployable and scalable.
+6.  **Containerization with Docker:** Includes Dockerfiles and Docker Compose configurations to containerize the sample microservice, making it easily deployable and scalable.
     
-6.  **Kubernetes Deployment:** Offers Kubernetes deployment manifests and Helm charts for streamlined deployment of the microservice to a Kubernetes cluster, simplifying orchestration and management.
+7.  **Kubernetes Deployment:** Offers Kubernetes deployment manifests and Helm charts for streamlined deployment of the microservice to a Kubernetes cluster, simplifying orchestration and management.
 
 ## Dependencies
 [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
@@ -372,3 +374,5 @@ TODO
 [Enforce HTTPS in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/enforcing-ssl)
 
 [How to Implement HSTS header in ASP.Net Core 6.0?](https://stackoverflow.com/questions/73376095/how-to-implement-hsts-header-in-asp-net-core-6-0)
+
+[Inject a service into a System.Text.Json converter](https://thomaslevesque.com/2020/08/31/inject-service-into-system-text-json-converter/)
