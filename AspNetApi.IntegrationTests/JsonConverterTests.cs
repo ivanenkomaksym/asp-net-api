@@ -9,29 +9,54 @@ namespace AspNetApi.IntegrationTests
     // ========================================================================
     // ==============Deserialization of interface not supported================
 
-    public enum MyBaseType
+    public enum BaseType
     {
         Base1,
         Base2
     }
 
-    public interface IMyBase{}
+    public interface IBase
+    { }
 
-    public record Base1(string Value) : IMyBase;
+    public class Base1 : IBase
+    {
+        public string Value { get; set; }
+    }
 
-    public record Base2(string Value) : IMyBase;
+    public class Base2 : IBase
+    {
+        public bool Active { get; set; }
+    }
 
-    public record Implementation(IMyBase MyBase, MyBaseType MyBaseType);
+    public class Implementation
+    {
+        public BaseType BaseType;
+        public IBase Base { get; set; }
+    }
 
     // ========================================================================
     // ==============Use JsonDerivedType to serialize interface================
 
     [JsonDerivedType(typeof(Derived1), typeDiscriminator: "Derived1")]
     [JsonDerivedType(typeof(Derived2), typeDiscriminator: "Derived2")]
-    public record BaseType(int Id);
+    public interface IBase2
+    { }
 
-    public record Derived1(int Id, string Name) : BaseType(Id);
-    public record Derived2(int Id, bool IsActive) : BaseType(Id);
+    public class Derived1 : IBase2
+    {
+        public string Name { get; set; }
+    }
+
+    public record Derived2 : IBase2
+    {
+        public bool IsActive { get; set; }
+    }
+
+    public class Container
+    {
+        public BaseType BaseType;
+        public IBase2 Base { get; set; }
+    }
 
     // ========================================================================
     // ========Use JsonConverter if JsonDerivedType cannot be used=============
@@ -44,45 +69,45 @@ namespace AspNetApi.IntegrationTests
             var root = jsonDoc.RootElement;
 
             var myBaseTypeString = root.GetProperty(MyBaseTypeString).GetString();
-            Enum.TryParse(myBaseTypeString, true, out MyBaseType myBaseType);
+            Enum.TryParse(myBaseTypeString, true, out BaseType myBaseType);
 
             var myBaseRawString = root.TryGetProperty(Encoding.UTF8.GetBytes(MyBaseString), out var myBaseJsonElement)
                 ? myBaseJsonElement.GetRawText()
                 : null;
 
-            IMyBase myBase = null;
+            IBase myBase = null;
 
             switch (myBaseType)
             {
-                case MyBaseType.Base1:
+                case BaseType.Base1:
                     myBase = JsonSerializer.Deserialize<Base1>(myBaseRawString, options);
                     break;
-                case MyBaseType.Base2:
+                case BaseType.Base2:
                     myBase = JsonSerializer.Deserialize<Base2>(myBaseRawString, options);
                     break;
             }
 
-            return new Implementation(myBase, myBaseType);
+            return new Implementation { BaseType = myBaseType, Base = myBase };
         }
 
         /// <remarks>
-        /// This method is required in order to correctly serialize derived types from <see cref="IMyBase"/>
+        /// This method is required in order to correctly serialize derived types from <see cref="IBase"/>
         /// in case using <see cref="JsonDerivedType"/> is not an option (e.g. derived types are split over different packages).
         /// </remarks>
         public override void Write(Utf8JsonWriter writer, Implementation value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
 
-            writer.WriteString(MyBaseTypeString, value.MyBaseType.ToString());
+            writer.WriteString(MyBaseTypeString, value.BaseType.ToString());
 
             writer.WritePropertyName(MyBaseString);
-            switch (value.MyBaseType)
+            switch (value.BaseType)
             {
-                case MyBaseType.Base1:
-                    JsonSerializer.Serialize(writer, (Base1)value.MyBase, options);
+                case BaseType.Base1:
+                    JsonSerializer.Serialize(writer, (Base1)value.Base, options);
                     break;
-                case MyBaseType.Base2:
-                    JsonSerializer.Serialize(writer, (Base2)value.MyBase, options);
+                case BaseType.Base2:
+                    JsonSerializer.Serialize(writer, (Base2)value.Base, options);
                     break;
             }
 
@@ -105,13 +130,32 @@ namespace AspNetApi.IntegrationTests
         }
 
         [Fact]
+        public void CanSerializeInterfaceInNewtonsoftButNotInSystemTextJson()
+        {
+            // Arrange
+            List<Implementation> values = new()
+            {
+                new Implementation { BaseType = BaseType.Base1, Base = new Base1 {Value = "Base1Value" } },
+                new Implementation { BaseType = BaseType.Base2, Base = new Base2 {Active = true } }
+            };
+
+            // Act
+            string newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(values);
+            string systemTextJson = JsonSerializer.Serialize(values);
+
+            // Assert
+            Assert.Contains("Base1Value", newtonsoftJson);
+            Assert.DoesNotContain("Base1Value", systemTextJson);
+        }
+
+        [Fact]
         public void DeserializationOfInterfaceNotSupported()
         {
             // Arrange
             List<Implementation> values = new()
             {
-                new Implementation(new Base1("Base1Value"), MyBaseType.Base1),
-                new Implementation(new Base2("Base2Value"), MyBaseType.Base2)
+                new Implementation { BaseType = BaseType.Base1, Base = new Base1 {Value = "Base1Value" } },
+                new Implementation { BaseType = BaseType.Base2, Base = new Base2 {Active = true } }
             };
 
             // Act
@@ -119,6 +163,7 @@ namespace AspNetApi.IntegrationTests
             var exception = Assert.Throws<System.NotSupportedException>(() => JsonSerializer.Deserialize<List<Implementation>>(json));
 
             // Assert
+            Assert.DoesNotContain("Base1Value", json);
             Assert.Contains("Deserialization of interface types is not supported.", exception.Message);
         }
 
@@ -126,26 +171,26 @@ namespace AspNetApi.IntegrationTests
         public void CanSerializeInterface()
         {
             // Arrange
-            var expected = new List<BaseType>
+            var expected = new List<Container>
             {
-                new Derived1(123, "Foo"),
-                new Derived2(456, true)
+                new() { BaseType = BaseType.Base1, Base = new Derived1 { Name = "Foo" } },
+                new() { BaseType = BaseType.Base2, Base = new Derived2 { IsActive = true } },
             };
 
             // Act
             string json = JsonSerializer.Serialize(expected);
-            var actual = JsonSerializer.Deserialize<List<BaseType>>(json);
+            var actual = JsonSerializer.Deserialize<List<Container>>(json);
 
             // Assert
             Assert.Equal(expected.Count, actual.Count);
 
-            var expectedDerived1 = Assert.IsType<Derived1>(expected[0]);
-            var actualDerived1 = Assert.IsType<Derived1>(actual[0]);
+            var expectedDerived1 = Assert.IsType<Derived1>(expected[0].Base);
+            var actualDerived1 = Assert.IsType<Derived1>(actual[0].Base);
 
             Assert.Equal(expectedDerived1.Name, actualDerived1.Name);
 
-            var expectedDerived2 = Assert.IsType<Derived2>(expected[1]);
-            var actualDerived2 = Assert.IsType<Derived2>(actual[1]);
+            var expectedDerived2 = Assert.IsType<Derived2>(expected[1].Base);
+            var actualDerived2 = Assert.IsType<Derived2>(actual[1].Base);
 
             Assert.Equal(expectedDerived2.IsActive, actualDerived2.IsActive);
         }
@@ -156,8 +201,8 @@ namespace AspNetApi.IntegrationTests
             // Arramge
             List<Implementation> expected = new()
             {
-                new Implementation(new Base1("Base1Value"), MyBaseType.Base1),
-                new Implementation(new Base2("Base2Value"), MyBaseType.Base2)
+                new Implementation { BaseType = BaseType.Base1, Base = new Base1 {Value = "Base1Value" } },
+                new Implementation { BaseType = BaseType.Base2, Base = new Base2 {Active = true } }
             };
 
             var options = new JsonSerializerOptions();
@@ -171,18 +216,18 @@ namespace AspNetApi.IntegrationTests
 
             // Assert
             Assert.Equal(expected.Count, actual.Count);
-            Assert.Equal(expected[0].MyBaseType, actual[0].MyBaseType);
-            Assert.Equal(expected[1].MyBaseType, actual[1].MyBaseType);
+            Assert.Equal<IntegrationTests.BaseType>((IntegrationTests.BaseType)expected[0].BaseType, (IntegrationTests.BaseType)actual[0].BaseType);
+            Assert.Equal<IntegrationTests.BaseType>((IntegrationTests.BaseType)expected[1].BaseType, (IntegrationTests.BaseType)actual[1].BaseType);
 
-            var expectedBase1 = Assert.IsType<Base1>(expected[0].MyBase);
-            var actualBase1 = Assert.IsType<Base1>(actual[0].MyBase);
+            var expectedBase1 = Assert.IsType<Base1>(expected[0].Base);
+            var actualBase1 = Assert.IsType<Base1>(actual[0].Base);
 
             Assert.Equal(expectedBase1.Value, actualBase1.Value);
 
-            var expectedBase2 = Assert.IsType<Base2>(expected[1].MyBase);
-            var actualBase2 = Assert.IsType<Base2>(actual[1].MyBase);
+            var expectedBase2 = Assert.IsType<Base2>(expected[1].Base);
+            var actualBase2 = Assert.IsType<Base2>(actual[1].Base);
 
-            Assert.Equal(expectedBase2.Value, actualBase2.Value);
+            Assert.Equal(expectedBase2.Active, actualBase2.Active);
         }
     }
 }

@@ -13,10 +13,12 @@ This repository serves as a comprehensive demonstration of various web service f
 4.  **Proxy Server and Load Balancer Configuration:** Provides guidance on configuring [ASP.NET](http://ASP.NET) Core to seamlessly work with proxy servers and load balancers, enabling smooth operation in complex network environments.
 
 5.  **Inject a service into a System.Text.Json converter:** Shows how to add a dummy JSON converter to expose **IServiceProvider** on the **JsonSerializerOptions**. If you want to achieve the same in your integration tests you must manually include **ServiceProviderDummyConverter** in **JsonSerializerOptions** when deserializing from JSON (example in **AspNetApi.IntegrationTests.BasicTests**).
+
+6. **JSON Serialization** using **Newtonsoft** and **System.Text.Json** (example in **AspNetApi.IntegrationTests.JsonConverterTests**).
     
-6.  **Containerization with Docker:** Includes Dockerfiles and Docker Compose configurations to containerize the sample microservice, making it easily deployable and scalable.
+7.  **Containerization with Docker:** Includes Dockerfiles and Docker Compose configurations to containerize the sample microservice, making it easily deployable and scalable.
     
-7.  **Kubernetes Deployment:** Offers Kubernetes deployment manifests and Helm charts for streamlined deployment of the microservice to a Kubernetes cluster, simplifying orchestration and management.
+8.  **Kubernetes Deployment:** Offers Kubernetes deployment manifests and Helm charts for streamlined deployment of the microservice to a Kubernetes cluster, simplifying orchestration and management.
 
 ## Dependencies
 [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
@@ -354,6 +356,45 @@ Note `strict-transport-security` added by Ingress, not ASP.NET application itsel
     nginx.ingress.kubernetes.io/configuration-snippet: |
         more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
 ```
+### JSON Serialization
+
+The use case is when you need an interface property in your model.
+
+```csharp
+public enum BaseType
+{
+    Base1,
+    Base2
+}
+
+public interface IBase
+{ }
+
+public class Base1 : IBase
+{
+    public string Value { get; set; }
+}
+
+public class Base2 : IBase
+{
+    public bool Active { get; set; }
+}
+
+public class Implementation
+{
+    public BaseType BaseType;
+    public IBase Base { get; set; }
+}
+```
+
+> In **Newtonsoft** interface property are included by default (check **CanSerializeInterfaceInNewtonsoftButNotInSystemTextJson** unit test).
+
+In **System.Text.Json** If you want your **Base** property to be included in serialization follow this order:
+1. Use **[JsonDerivedType]** attribute on your interface and specify all possible derived types in advance
+2. Sometimes first approach is not possible in case derived types are spread over different package and you don't want your package with interface to depend on package with derived type. In this case it's then preferred to use  custom **JsonConverter** with implemented **Write** method.
+
+In both **Newtonsoft** and **System.Text.Json** custom **JsonConverter** with implemented **Read** method is only needed when you want to manually deserialize from JSON string, e.g. in unit tests. On web api level this is not required.
+
 ### Using Helm chart
 
 TODO
