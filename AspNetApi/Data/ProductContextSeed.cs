@@ -16,6 +16,7 @@ namespace AspNetApi.Data
                     Summary = "Data is at the center of many challenges in system design today. Difficult issues need to be figured out, such as scalability, consistency, reliability, efficiency, and maintainability. In addition, we have an overwhelming variety of tools, including relational databases, NoSQL datastores, stream or batch processors, and message brokers. What are the right choices for your application? How do you make sense of all these buzzwords?",
                     ImageFile = "https://m.media-amazon.com/images/I/51ZSpMl1-LL._SX379_BO1,204,203,200_.jpg",
                     Price = 32.17m,
+                    CategoryInfo = new BooksCategory { NofPages = 500 }
                 },
                 new Product()
                 {
