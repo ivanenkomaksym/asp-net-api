@@ -1,7 +1,9 @@
-﻿using System.Text.Json.Serialization;
+﻿using AspNetApi.Converters;
+using System.Text.Json.Serialization;
 
 namespace AspNetApi.Models
 {
+    [JsonConverter(typeof(ProductConverter))]
     public record Product
     {
         public Guid Id { get; set; }
