@@ -14,7 +14,8 @@ namespace AspNetApi.Repositories
 
         public Task CreateProduct(Product product)
         {
-            throw new NotImplementedException();
+            _productContext.Products.Add(product);
+            return Task.CompletedTask;
         }
 
         public Task<bool> DeleteProduct(Guid id)
@@ -39,7 +40,7 @@ namespace AspNetApi.Repositories
 
         public Task<IEnumerable<Product>> GetProducts()
         {
-            return Task.FromResult(_productContext.Products);
+            return Task.FromResult(_productContext.Products.AsEnumerable());
         }
 
         public Task<bool> UpdateProduct(Product product)

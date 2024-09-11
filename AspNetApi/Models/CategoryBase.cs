@@ -4,8 +4,8 @@ namespace AspNetApi.Models
 {
     [JsonDerivedType(typeof(BooksCategory))]
     [JsonDerivedType(typeof(MoviesCategory))]
-    public abstract class CategoryBase
+    public class CategoryBase
     {
-        abstract public CategoryType CategoryType { get; }
+        public virtual CategoryType CategoryType { get; }
     }
 }

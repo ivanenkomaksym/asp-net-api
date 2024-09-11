@@ -4,7 +4,7 @@ namespace AspNetApi.Data
 {
     public class ProductContextSeed
     {
-        public static IEnumerable<Product> GetPreconfiguredProducts()
+        public static List<Product> GetPreconfiguredProducts()
         {
             return new List<Product>()
             {

@@ -4,6 +4,6 @@ namespace AspNetApi.Data
 {
     public class IProductContext
     {
-        public virtual IEnumerable<Product> Products { get; }
+        public virtual List<Product> Products { get; }
     }
 }

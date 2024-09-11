@@ -81,17 +81,17 @@ namespace AspNetApi.Converters
         {
             writer.WriteStartObject();
 
-            writer.WriteString("Id", value.Id);
-            writer.WriteString("Name", value.Name);
-            writer.WriteString("Category", value.Category);
-            writer.WriteString("Summary", value.Summary);
-            writer.WriteString("ImageFile", value.ImageFile);
-            writer.WriteNumber("Price", value.Price);
-            writer.WriteNumber("Currency", (int)value.Currency);
+            writer.WriteString("id", value.Id);
+            writer.WriteString("name", value.Name);
+            writer.WriteString("category", value.Category);
+            writer.WriteString("summary", value.Summary);
+            writer.WriteString("imageFile", value.ImageFile);
+            writer.WriteNumber("price", value.Price);
+            writer.WriteString("currency", value.Currency.ToString());
 
             if (value.CategoryInfo != null)
             {
-                writer.WritePropertyName("CategoryInfo");
+                writer.WritePropertyName("categoryInfo");
                 WriteCategoryInfo(writer, value.CategoryInfo, options);
             }
 

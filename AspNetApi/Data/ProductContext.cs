@@ -9,6 +9,6 @@ namespace AspNetApi.Data
             Products = ProductContextSeed.GetPreconfiguredProducts();
         }
 
-        public override IEnumerable<Product> Products { get; }
+        public override List<Product> Products { get; }
     }
 }
