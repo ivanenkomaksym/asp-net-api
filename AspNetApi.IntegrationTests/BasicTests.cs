@@ -1,6 +1,8 @@
 ﻿using AspNetApi.Converters;
+using AspNetApi.Models;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -96,5 +98,59 @@ namespace AspNetApi.IntegrationTests
             // Assert
             response.EnsureSuccessStatusCode(); // Status Code 200-299
         }
+
+        [Fact]
+        public async Task GetProducts()
+        {
+            // Arrange
+            using var application = new ApplicationBase(Output);
+            var client = application.CreateClient();
+
+            // Setup converter
+            var httpContextAccessor = application.Services.GetRequiredService<IHttpContextAccessor>();
+            var serviceProvdier = application.Services.GetRequiredService<IServiceProvider>();
+            var serviceProviderConverter = new ServiceProviderDummyConverter(httpContextAccessor, serviceProvdier);
+
+            // Setup JsonOptions
+            var jsonOptions = new JsonSerializerOptions { };
+            jsonOptions.Converters.Add(serviceProviderConverter);
+
+            // Act
+            var response = await client.GetAsync("/api/Products");
+
+            var result = await response.Content.ReadFromJsonAsync<IEnumerable<Product>>(jsonOptions);
+
+            // Assert
+            response.EnsureSuccessStatusCode(); // Status Code 200-299
+        }
+
+        [Fact]
+        public async Task CreateProduct()
+        {
+            // Arrange
+            using var application = new ApplicationBase(Output);
+            var client = application.CreateClient();
+
+            // Setup converter
+            var httpContextAccessor = application.Services.GetRequiredService<IHttpContextAccessor>();
+            var serviceProvdier = application.Services.GetRequiredService<IServiceProvider>();
+            var serviceProviderConverter = new ServiceProviderDummyConverter(httpContextAccessor, serviceProvdier);
+
+            // Setup JsonOptions
+            var jsonOptions = new JsonSerializerOptions { };
+            jsonOptions.Converters.Add(serviceProviderConverter);
+
+            // Act
+            var json = "{\r\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"name\": \"string\",\r\n  \"category\": \"string\",\r\n  \"summary\": \"string\",\r\n  \"imageFile\": \"string\",\r\n  \"price\": 0,\r\n  \"categoryInfo\": {\r\n    \"categoryType\": \"Books\"\r\n  },\r\n  \"currency\": \"USD\"\r\n}";
+            using var stringContent = new StringContent(json, EncodingType, "application/json");
+            var response = await client.PostAsync("/api/Products", stringContent);
+
+            var result = await response.Content.ReadFromJsonAsync<Product>(jsonOptions);
+
+            // Assert
+            response.EnsureSuccessStatusCode(); // Status Code 200-299
+        }
+
+        private static readonly Encoding EncodingType = Encoding.UTF8;
     }
 }
