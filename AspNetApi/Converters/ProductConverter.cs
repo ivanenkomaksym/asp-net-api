@@ -6,6 +6,15 @@ namespace AspNetApi.Converters
 {
     public class ProductConverter : JsonConverter<Product>
     {
+        private static readonly string IdString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Id));
+        private static readonly string NameString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Name));
+        private static readonly string CategoryString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Category));
+        private static readonly string SummaryString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Summary));
+        private static readonly string ImageFileString = StringConverter.ToCamelCaseFromPascal(nameof(Product.ImageFile));
+        private static readonly string PriceString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Price));
+        private static readonly string CurrencyString = StringConverter.ToCamelCaseFromPascal(nameof(Product.Currency));
+        private static readonly string CategoryInfoString = StringConverter.ToCamelCaseFromPascal(nameof(Product.CategoryInfo));
+
         public override Product? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
@@ -22,34 +31,27 @@ namespace AspNetApi.Converters
                     var propertyName = reader.GetString();
 
                     reader.Read();
-                    switch (propertyName)
+                    if (propertyName.Equals(IdString))
+                        product.Id = reader.GetGuid();
+                    else if (propertyName.Equals(NameString))
+                        product.Name = reader.GetString();
+                    else if (propertyName.Equals(CategoryString))
+                        product.Category = reader.GetString();
+                    else if (propertyName.Equals(SummaryString))
+                        product.Summary = reader.GetString();
+                    else if (propertyName.Equals(ImageFileString))
+                        product.ImageFile = reader.GetString();
+                    else if (propertyName.Equals(PriceString))
+                        product.Price = reader.GetDecimal();
+                    else if (propertyName.Equals(CurrencyString))
                     {
-                        case "id":
-                            product.Id = reader.GetGuid();
-                            break;
-                        case "name":
-                            product.Name = reader.GetString();
-                            break;
-                        case "category":
-                            product.Category = reader.GetString();
-                            break;
-                        case "summary":
-                            product.Summary = reader.GetString();
-                            break;
-                        case "imageFile":
-                            product.ImageFile = reader.GetString();
-                            break;
-                        case "price":
-                            product.Price = reader.GetDecimal();
-                            break;
-                        case "currency":
-                            Enum.TryParse(reader.GetString(), out Currency currency);
-                            product.Currency = currency;
-                            break;
-                        case "categoryInfo":
-                            product.CategoryInfo = ReadCategoryInfo(ref reader, options);
-                            break;
+                        var parseResult = Enum.TryParse(reader.GetString(), out Currency currency);
+                        if (!parseResult)
+                            throw new JsonException($"Failed to parse `{CurrencyString}`.");
+                        product.Currency = currency;
                     }
+                    else if (propertyName.Equals(CategoryInfoString))
+                        product.CategoryInfo = ReadCategoryInfo(ref reader, options);
                 }
             }
             throw new JsonException("Invalid JSON structure");
@@ -70,32 +72,76 @@ namespace AspNetApi.Converters
                 var categoryTypePropString = categoryTypeProp.GetString();
                 var parseResult = Enum.TryParse(categoryTypePropString, out CategoryType categoryType);
                 if (!parseResult)
-                    throw new JsonException($"Unknown CategoryType: {categoryTypePropString}");
+                    throw new JsonException($"Unknown {nameof(Product.CategoryInfo.CategoryType)}: {categoryTypePropString}.");
 
-                return categoryType switch
+                switch (categoryType)
                 {
-                    CategoryType.Books => JsonSerializer.Deserialize<BooksCategory>(rootElement.GetRawText(), options),
-                    CategoryType.Movies => JsonSerializer.Deserialize<MoviesCategory>(rootElement.GetRawText(), options),
-                    _ => throw new JsonException($"Unknown CategoryType: {categoryType}")
-                };
+                    case CategoryType.Books:
+                        ValidateBooksCategory(rootElement);
+                        return JsonSerializer.Deserialize<BooksCategory>(rootElement.GetRawText(), options);
+
+                    case CategoryType.Movies:
+                        ValidateMoviesCategory(rootElement);
+                        return JsonSerializer.Deserialize<MoviesCategory>(rootElement.GetRawText(), options);
+
+                    default:
+                        throw new JsonException($"Unknown CategoryType: {categoryType}");
+                }
             }
+        }
+
+        private static void ValidateMoviesCategory(JsonElement element)
+        {
+            var propertyName = StringConverter.ToCamelCaseFromPascal(nameof(MoviesCategory.NofMinutes));
+            // Check for required properties
+            if (!element.TryGetProperty(propertyName, out _))
+            {
+                throw new JsonException($"{nameof(MoviesCategory)} requires '{propertyName}'.");
+            }
+
+            // Check for any unsupported properties
+            if (!HasExactNumberOfProperties(element, 1))
+            {
+                throw new JsonException($"{nameof(MoviesCategory)} contains unsupported properties.");
+            }
+        }
+
+        private static void ValidateBooksCategory(JsonElement element)
+        {
+            var propertyName = StringConverter.ToCamelCaseFromPascal(nameof(BooksCategory.NofPages));
+            // Check for required properties
+            if (!element.TryGetProperty(propertyName, out _))
+            {
+                throw new JsonException($"{nameof(BooksCategory)} requires '{propertyName}'.");
+            }
+
+            // Check for any unsupported properties
+            if (!HasExactNumberOfProperties(element, 2))
+            {
+                throw new JsonException($"{nameof(BooksCategory)} contains unsupported properties.");
+            }
+        }
+        
+        private static bool HasExactNumberOfProperties(JsonElement element, ushort nofProperties)
+        {
+            return element.ValueKind == JsonValueKind.Object && element.EnumerateObject().Count() == nofProperties;
         }
 
         public override void Write(Utf8JsonWriter writer, Product value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
 
-            writer.WriteString("id", value.Id);
-            writer.WriteString("name", value.Name);
-            writer.WriteString("category", value.Category);
-            writer.WriteString("summary", value.Summary);
-            writer.WriteString("imageFile", value.ImageFile);
-            writer.WriteNumber("price", value.Price);
-            writer.WriteString("currency", value.Currency.ToString());
+            writer.WriteString(IdString, value.Id);
+            writer.WriteString(NameString, value.Name);
+            writer.WriteString(CategoryString, value.Category);
+            writer.WriteString(SummaryString, value.Summary);
+            writer.WriteString(ImageFileString, value.ImageFile);
+            writer.WriteNumber(PriceString, value.Price);
+            writer.WriteString(CurrencyString, value.Currency.ToString());
 
             if (value.CategoryInfo != null)
             {
-                writer.WritePropertyName("categoryInfo");
+                writer.WritePropertyName(CategoryInfoString);
                 WriteCategoryInfo(writer, value.CategoryInfo, options);
             }
 
