@@ -67,7 +67,11 @@ namespace AspNetApi.Converters
                 if (!rootElement.TryGetProperty("categoryType", out var categoryTypeProp))
                     throw new JsonException("Missing CategoryType");
 
-                Enum.TryParse(categoryTypeProp.GetString(), out CategoryType categoryType);
+                var categoryTypePropString = categoryTypeProp.GetString();
+                var parseResult = Enum.TryParse(categoryTypePropString, out CategoryType categoryType);
+                if (!parseResult)
+                    throw new JsonException($"Unknown CategoryType: {categoryTypePropString}");
+
                 return categoryType switch
                 {
                     CategoryType.Books => JsonSerializer.Deserialize<BooksCategory>(rootElement.GetRawText(), options),

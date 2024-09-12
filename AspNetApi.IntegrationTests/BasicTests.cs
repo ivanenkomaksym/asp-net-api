@@ -2,6 +2,7 @@
 using AspNetApi.Models;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using Xunit;
@@ -131,17 +132,23 @@ namespace AspNetApi.IntegrationTests
             using var application = new ApplicationBase(Output);
             var client = application.CreateClient();
 
-            // Setup converter
-            var httpContextAccessor = application.Services.GetRequiredService<IHttpContextAccessor>();
-            var serviceProvdier = application.Services.GetRequiredService<IServiceProvider>();
-            var serviceProviderConverter = new ServiceProviderDummyConverter(httpContextAccessor, serviceProvdier);
-
             // Setup JsonOptions
             var jsonOptions = new JsonSerializerOptions { };
-            jsonOptions.Converters.Add(serviceProviderConverter);
 
             // Act
-            var json = "{\r\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"name\": \"string\",\r\n  \"category\": \"string\",\r\n  \"summary\": \"string\",\r\n  \"imageFile\": \"string\",\r\n  \"price\": 0,\r\n  \"categoryInfo\": {\r\n    \"categoryType\": \"Books\"\r\n  },\r\n  \"currency\": \"USD\"\r\n}";
+            var json = "{ " +
+                "\"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", " +
+                "\"name\": \"string\", " +
+                "\"category\": \"string\", " +
+                "\"summary\": \"string\", " +
+                "\"imageFile\": \"string\", " +
+                "\"price\": 0, " +
+                "\"categoryInfo\": { " +
+                    "\"categoryType\": \"Books\" " +
+                "}, " +
+                "\"currency\": \"USD\" " +
+            "}";
+
             using var stringContent = new StringContent(json, EncodingType, "application/json");
             var response = await client.PostAsync("/api/Products", stringContent);
 
@@ -149,6 +156,37 @@ namespace AspNetApi.IntegrationTests
 
             // Assert
             response.EnsureSuccessStatusCode(); // Status Code 200-299
+        }
+
+        [Fact]
+        public async Task ErrorWhenCreateProductWithInvalidCategoryType()
+        {
+            // Arrange
+            using var application = new ApplicationBase(Output);
+            var client = application.CreateClient();
+
+            // Setup JsonOptions
+            var jsonOptions = new JsonSerializerOptions { };
+
+            // Act
+            var json = "{ " +
+                "\"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", " +
+                "\"name\": \"string\", " +
+                "\"category\": \"string\", " +
+                "\"summary\": \"string\", " +
+                "\"imageFile\": \"string\", " +
+                "\"price\": 0, " +
+                "\"categoryInfo\": { " +
+                    "\"categoryType\": \"InvalidType\" " +
+                "}, " +
+                "\"currency\": \"USD\" " +
+            "}";
+
+            using var stringContent = new StringContent(json, EncodingType, "application/json");
+            var response = await client.PostAsync("/api/Products", stringContent);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         private static readonly Encoding EncodingType = Encoding.UTF8;
