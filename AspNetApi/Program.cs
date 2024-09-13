@@ -1,13 +1,30 @@
+using AspNetApi.Authentication;
 using AspNetApi.Converters;
 using AspNetApi.Data;
 using AspNetApi.Repositories;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
 builder.Services.AddSwaggerGen();
+
+// Add custom authorization policy
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "CustomScheme";
+    options.DefaultChallengeScheme = "CustomScheme";
+})
+.AddScheme<AuthenticationSchemeOptions, CustomAuthenticationHandler>("CustomScheme", null);
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("HealthCheckPolicy", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim(ClaimTypes.Name, "HealthCheckUser")); // Ensure the user is authenticated via the custom scheme
+});
 
 // Add services to the container.
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
@@ -51,6 +68,8 @@ app.UseCors(builder =>
 
 app.UseRouting();
 
+app.UseAuthorization();
+
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapGet("/", async context =>
@@ -77,10 +96,7 @@ app.UseEndpoints(endpoints =>
     });
 });
 
-app.UseAuthorization();
-
+app.MapHealthChecks("/healthz").RequireAuthorization("HealthCheckPolicy");
 app.MapControllers();
-
-app.MapHealthChecks("/healthz");
 
 app.Run();
