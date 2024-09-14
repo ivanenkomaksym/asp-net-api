@@ -1,16 +1,19 @@
 using AspNetApi.Authentication;
+using AspNetApi.Authorization;
 using AspNetApi.Converters;
 using AspNetApi.Data;
 using AspNetApi.Repositories;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultTransformer>();
 
 // Add custom authorization policy
 builder.Services.AddAuthentication(options =>
@@ -18,13 +21,17 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = "CustomScheme";
     options.DefaultChallengeScheme = "CustomScheme";
 })
-.AddScheme<AuthenticationSchemeOptions, CustomAuthenticationHandler>("CustomScheme", null);
+.AddScheme<AuthenticationSchemeOptions, AlwaysSuccessAuthenticationHandler>("CustomScheme", null);
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("HealthCheckPolicy", policy =>
-        policy.RequireAuthenticatedUser()
-              .RequireClaim(ClaimTypes.Name, "HealthCheckUser")); // Ensure the user is authenticated via the custom scheme
+    {
+        policy.AuthenticationSchemes.Add("CustomScheme");
+        policy.AddRequirements(new SecretHeaderRequirement("secret_header", "expected_value"));
+    });
 });
+
+builder.Services.AddSingleton<IAuthorizationHandler, SecretHeaderHandler>();
 
 // Add services to the container.
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
