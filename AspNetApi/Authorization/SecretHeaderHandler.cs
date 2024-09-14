@@ -16,6 +16,7 @@ namespace AspNetApi.Authorization
                 if (headerValue == requirement.ExpectedValue)
                 {
                     context.Succeed(requirement); // Authorization succeeds
+                    return Task.CompletedTask;
                 }
             }
 
@@ -25,5 +26,4 @@ namespace AspNetApi.Authorization
             return Task.CompletedTask;
         }
     }
-
 }
