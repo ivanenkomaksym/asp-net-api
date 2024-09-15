@@ -1,8 +1,9 @@
-﻿using System.Net;
+﻿using AspNetApi.Tests;
+using System.Net;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.IntegrationTests.IntegrationTests
 {
     public sealed class HealthCheckTests(ITestOutputHelper output)
     {

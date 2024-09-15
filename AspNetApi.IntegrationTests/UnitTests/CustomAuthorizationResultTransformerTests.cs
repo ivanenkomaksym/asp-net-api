@@ -6,7 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using Xunit;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.IntegrationTests.UnitTests
 {
     public class CustomAuthorizationResultTransformerTests
     {
@@ -28,7 +28,7 @@ namespace AspNetApi.IntegrationTests
 
             // Assert
             Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
-            var responseContent = await GetResponseBody(context.Response);
+            var responseContent = GetResponseBody(context.Response);
             Assert.Equal("Authentication required.", responseContent);
         }
 
@@ -51,7 +51,7 @@ namespace AspNetApi.IntegrationTests
 
             // Assert
             Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
-            var responseContent = await GetResponseBody(context.Response);
+            var responseContent = GetResponseBody(context.Response);
             Assert.Equal("Authorization failed: Invalid secret header", responseContent);
         }
 
@@ -72,7 +72,7 @@ namespace AspNetApi.IntegrationTests
             await next.Received(1).Invoke(context);
         }
 
-        private async Task<string> GetResponseBody(HttpResponse response)
+        private string GetResponseBody(HttpResponse response)
         {
             response.Body.Position = 0;
             using StreamReader reader = new(response.Body, Encoding.UTF8);

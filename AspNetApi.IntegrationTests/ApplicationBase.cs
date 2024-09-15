@@ -3,7 +3,7 @@ using AspNetApi.Converters;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.Tests
 {
     internal class ApplicationBase : WebApplicationFactory<Program>
     {

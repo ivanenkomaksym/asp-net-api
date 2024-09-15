@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
    
    <ItemGroup>
-      <InternalsVisibleTo Include="AspNetApi.IntegrationTests" />
+      <InternalsVisibleTo Include="AspNetApi.Tests" />
    </ItemGroup>
 
    <PropertyGroup>

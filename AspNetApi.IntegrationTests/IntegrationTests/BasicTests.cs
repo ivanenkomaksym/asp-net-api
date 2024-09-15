@@ -1,5 +1,6 @@
 ﻿using AspNetApi.Converters;
 using AspNetApi.Models;
+using AspNetApi.Tests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
@@ -9,7 +10,7 @@ using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.IntegrationTests.IntegrationTests
 {
     public class MyOptions
     {
@@ -35,7 +36,7 @@ namespace AspNetApi.IntegrationTests
             Validator.TryValidateObject(model, ctx, validationResults, true);
             return validationResults;
         }
-        
+
         // in test class
         [Fact]
         public void TestMyOptions()
@@ -46,14 +47,13 @@ namespace AspNetApi.IntegrationTests
             };
             var result = ValidateModel(options);
 
-            Assert.True(result.Any(
-                v => v.MemberNames.Contains("ConnectionString") &&
-                     v.ErrorMessage.Contains("must be at least")));
+            Assert.Contains(result, v => v.MemberNames.Contains("ConnectionString") &&
+                     v.ErrorMessage.Contains("must be at least"));
         }
 
         [Fact]
         public void OptionsValidation_FailsOnInvalidConfiguration()
-        {    
+        {
             // Arrange
             var services = new ServiceCollection();
             var configuration = new ConfigurationBuilder()
@@ -191,7 +191,7 @@ namespace AspNetApi.IntegrationTests
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var validationError = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
 
-            Assert.Contains($"Unknown {nameof(Product.CategoryInfo.CategoryType)}: InvalidType.", validationError.Errors["$"]);            
+            Assert.Contains($"Unknown {nameof(Product.CategoryInfo.CategoryType)}: InvalidType.", validationError.Errors["$"]);
         }
 
         [Fact]

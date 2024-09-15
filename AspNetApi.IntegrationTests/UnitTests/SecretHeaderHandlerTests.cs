@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Xunit;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.IntegrationTests.UnitTests
 {
     public sealed class SecretHeaderHandlerTests
     {

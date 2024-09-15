@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests
+namespace AspNetApi.IntegrationTests.UnitTests
 {
     // ========================================================================
     // ==============Deserialization of interface not supported================
@@ -160,7 +160,7 @@ namespace AspNetApi.IntegrationTests
 
             // Act
             string json = JsonSerializer.Serialize(values);
-            var exception = Assert.Throws<System.NotSupportedException>(() => JsonSerializer.Deserialize<List<Implementation>>(json));
+            var exception = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<List<Implementation>>(json));
 
             // Assert
             Assert.DoesNotContain("Base1Value", json);
@@ -216,8 +216,8 @@ namespace AspNetApi.IntegrationTests
 
             // Assert
             Assert.Equal(expected.Count, actual.Count);
-            Assert.Equal<IntegrationTests.BaseType>((IntegrationTests.BaseType)expected[0].BaseType, (IntegrationTests.BaseType)actual[0].BaseType);
-            Assert.Equal<IntegrationTests.BaseType>((IntegrationTests.BaseType)expected[1].BaseType, (IntegrationTests.BaseType)actual[1].BaseType);
+            Assert.Equal(expected[0].BaseType, actual[0].BaseType);
+            Assert.Equal(expected[1].BaseType, actual[1].BaseType);
 
             var expectedBase1 = Assert.IsType<Base1>(expected[0].Base);
             var actualBase1 = Assert.IsType<Base1>(actual[0].Base);
