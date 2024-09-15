@@ -27,5 +27,4 @@ namespace AspNetApi.Authentication
             return Task.FromResult(AuthenticateResult.Success(ticket));
         }
     }
-
 }

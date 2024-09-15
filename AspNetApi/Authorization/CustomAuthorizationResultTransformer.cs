@@ -11,11 +11,10 @@ namespace AspNetApi.Authorization
     {
         private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new AuthorizationMiddlewareResultHandler();
 
-        public async Task HandleAsync(
-            RequestDelegate next,
-            HttpContext context,
-            AuthorizationPolicy policy,
-            PolicyAuthorizationResult authorizeResult)
+        public async Task HandleAsync(RequestDelegate next,
+                                      HttpContext context,
+                                      AuthorizationPolicy policy,
+                                      PolicyAuthorizationResult authorizeResult)
         {
             // If the authorization failed
             if (!authorizeResult.Succeeded)
@@ -45,5 +44,4 @@ namespace AspNetApi.Authorization
             }
         }
     }
-
 }
