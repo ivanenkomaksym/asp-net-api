@@ -13,7 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultTransformer>();
+builder.Services.AddSingleton<SecretHeaderAuthorizationResultTransformer>();
+builder.Services.AddSingleton<MinimumAgeAuthorizationResultTransformer>();
+
+// Register composite handler but don't make it part of the collection
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler>(sp =>
+{
+    var handler1 = sp.GetRequiredService<SecretHeaderAuthorizationResultTransformer>();
+    var handler2 = sp.GetRequiredService<MinimumAgeAuthorizationResultTransformer>();
+
+    return new CompositeAuthorizationResultTransformer([handler1, handler2]);
+});
 
 // Add custom authorization policy
 builder.Services.AddAuthentication(options =>
@@ -28,10 +38,12 @@ builder.Services.AddAuthorization(options =>
     {
         policy.AuthenticationSchemes.Add("CustomScheme");
         policy.AddRequirements(new SecretHeaderRequirement("secret_header", "expected_value"));
+        policy.AddRequirements(new MinimumAgeRequirement("age", 18));
     });
 });
 
-builder.Services.AddSingleton<IAuthorizationHandler, SecretHeaderHandler>();
+builder.Services.AddTransient<IAuthorizationHandler, SecretHeaderHandler>();
+builder.Services.AddTransient<IAuthorizationHandler, MinimumAgeHandler>();
 
 // Add services to the container.
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();

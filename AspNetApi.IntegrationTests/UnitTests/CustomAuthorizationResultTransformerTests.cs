@@ -10,7 +10,7 @@ namespace AspNetApi.IntegrationTests.UnitTests
 {
     public class CustomAuthorizationResultTransformerTests
     {
-        private readonly CustomAuthorizationResultTransformer _transformer = new();
+        private readonly SecretHeaderAuthorizationResultTransformer _transformer = new();
 
         [Fact]
         public async Task HandleAsync_ShouldReturn401_WhenAuthenticationFails()

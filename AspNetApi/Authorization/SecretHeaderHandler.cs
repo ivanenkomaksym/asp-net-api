@@ -21,7 +21,7 @@ namespace AspNetApi.Authorization
             }
 
             // Fail if header is missing or value is incorrect
-            var failureReason = new AuthorizationFailureReason(this, "Invalid secret header value.");
+            var failureReason = new SecretHeaderFailureReason(this, "Invalid secret header value.");
             context.Fail(failureReason);
             return Task.CompletedTask;
         }

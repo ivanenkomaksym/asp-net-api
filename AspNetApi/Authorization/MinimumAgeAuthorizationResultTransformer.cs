@@ -3,11 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace AspNetApi.Authorization
 {
-    /// <summary>
-    /// Transforms default response with <seealso cref="AuthorizationFailure"/> reason details.
-    /// Uses failures set by <see cref="SecretHeaderHandler"/>.
-    /// </summary>
-    public class CustomAuthorizationResultTransformer : IAuthorizationMiddlewareResultHandler
+    public class MinimumAgeAuthorizationResultTransformer : IAuthorizationMiddlewareResultHandler
     {
         private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new AuthorizationMiddlewareResultHandler();
 
@@ -27,20 +23,14 @@ namespace AspNetApi.Authorization
                     return;
                 }
 
-
-                if (authorizeResult.AuthorizationFailure != null)
+                if (authorizeResult.AuthorizationFailure?.FailureReasons.FirstOrDefault() is MinimumAgeFailureReason minimumAgeFailureReason)
                 {
                     // Handle authorization failure with custom message
-                    var failureReason = authorizeResult.AuthorizationFailure.FailureReasons.FirstOrDefault()?.Message;
+                    var failureReason = minimumAgeFailureReason.Message;
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     await context.Response.WriteAsync($"Authorization failed: {failureReason}");
                     return;
                 }
-            }
-            else
-            {
-                // Continue with default behavior if authorized
-                await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
             }
         }
     }
