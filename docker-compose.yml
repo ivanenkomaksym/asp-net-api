@@ -5,4 +5,4 @@ services:
     image: ${DOCKER_REGISTRY-}aspnetapi
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: AspNetApi/Dockerfile

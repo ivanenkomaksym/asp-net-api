@@ -16,13 +16,15 @@ spec:
     spec:
       containers:
         - name: aspnetapi
-          image: aspnetapi:latest
+          image: ivanenkomak/aspnetapi:latest
           env:
             - name: "ASPNETCORE_ENVIRONMENT"
               value: "Staging"
+            - name: Urls
+              value: "http://0.0.0.0:80"
             # This will enable ForwarHeaders middleware, so the application knows it’s behind a reverse-proxy (in this case an NGINX ingress controller).
             - name: "ASPNETCORE_FORWARDEDHEADERS_ENABLED"
               value: "true"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
