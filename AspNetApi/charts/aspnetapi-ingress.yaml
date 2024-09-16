@@ -6,18 +6,10 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
     # Make sure to include Strict-Transport-Security response header by Ingress.
     nginx.ingress.kubernetes.io/configuration-snippet: |
-        more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: aspnetapi
-            port:
-              number: 80
   - host: aspnetapi.internal
     http:
       paths:
@@ -28,3 +20,7 @@ spec:
             name: aspnetapi
             port:
               number: 80
+  tls: # This section is for HTTPS
+  - hosts:
+    - aspnetapi.internal
+    secretName: aspnetapi-tls-secret # You need to create a secret with a valid TLS certificate

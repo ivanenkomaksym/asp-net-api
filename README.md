@@ -242,27 +242,32 @@ minikube -p minikube docker-env --shell powershell | Invoke-Expression
 # for cmd:
 # @for /f "tokens=*" %i in ('minikube -p minikube docker-env --shell cmd') do @%i
 ```
-4. **Deploy**:
+4. Enable ingress
+```bash
+minikube addons enable ingress
+```
+
+5. **Deploy**:
 ```bash
 kubectl apply -f aspnetapi.yaml
 kubectl apply -f aspnetapi-service.yaml
 kubectl apply -f aspnetapi-ingress.yaml
 ```
-5. **Start Minikube dashboard**:
+6. **Start Minikube dashboard**:
 ```bash
 minikube dashboard
 ```
-6. **Start Minikube tunnel**:
+7. **Start Minikube tunnel**:
 ```bash
 minikube tunnel
 ```
-7. **Access minikube VM**:
+8. **Access minikube VM**:
    
 In another command prompt execute this command:
 ```bash
 minikube ssh
 ```
-8. **Access API**:
+9. **Access API**:
 
 Access via HTTP:
 ```bash
