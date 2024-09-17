@@ -6,11 +6,11 @@ using System.Security.Claims;
 using System.Text;
 using Xunit;
 
-namespace AspNetApi.IntegrationTests.UnitTests
+namespace AspNetApi.UnitTests
 {
-    public class CustomAuthorizationResultTransformerTests
+    public class CompositeAuthorizationResultTransformerTests
     {
-        private readonly SecretHeaderAuthorizationResultTransformer _transformer = new();
+        private readonly CompositeAuthorizationResultTransformer _transformer = new([new SecretHeaderAuthorizationResultTransformer(), new MinimumAgeAuthorizationResultTransformer()]);
 
         [Fact]
         public async Task HandleAsync_ShouldReturn401_WhenAuthenticationFails()
@@ -29,11 +29,11 @@ namespace AspNetApi.IntegrationTests.UnitTests
             // Assert
             Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
             var responseContent = GetResponseBody(context.Response);
-            Assert.Equal("Authentication required.", responseContent);
+            Assert.Contains("Authentication required.", responseContent);
         }
 
         [Fact]
-        public async Task HandleAsync_ShouldReturn403_WhenAuthorizationFails()
+        public async Task HandleAsync_ShouldReturn403_WhenInvalidSecretHeader()
         {
             // Arrange
             var context = new DefaultHttpContext();
@@ -43,8 +43,8 @@ namespace AspNetApi.IntegrationTests.UnitTests
             var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
 
             // Simulate an authorization failure with a custom reason
-            var failureReason = new AuthorizationFailureReason(null, "Invalid secret header");
-            var authorizeResult = PolicyAuthorizationResult.Forbid(AuthorizationFailure.Failed(new[] { failureReason }));
+            var secretHeaderFailureReason = new SecretHeaderFailureReason(null, "Invalid secret header");
+            var authorizeResult = PolicyAuthorizationResult.Forbid(AuthorizationFailure.Failed(new[] { secretHeaderFailureReason }));
 
             // Act
             await _transformer.HandleAsync(next, context, policy, authorizeResult);
@@ -53,6 +53,29 @@ namespace AspNetApi.IntegrationTests.UnitTests
             Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
             var responseContent = GetResponseBody(context.Response);
             Assert.Equal("Authorization failed: Invalid secret header", responseContent);
+        }
+
+        [Fact]
+        public async Task HandleAsync_ShouldReturn403_WhenUnderage()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Response.Body = new MemoryStream();
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.Name, "TestUser") }, "TestAuthScheme")); // Authenticated
+            var next = Substitute.For<RequestDelegate>();
+            var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
+            // Simulate an authorization failure with a custom reason
+            var minimumAgeFailureReason = new MinimumAgeFailureReason(null, "Underage");
+            var authorizeResult = PolicyAuthorizationResult.Forbid(AuthorizationFailure.Failed(new[] { minimumAgeFailureReason }));
+
+            // Act
+            await _transformer.HandleAsync(next, context, policy, authorizeResult);
+
+            // Assert
+            Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
+            var responseContent = GetResponseBody(context.Response);
+            Assert.Equal("Authorization failed: Underage", responseContent);
         }
 
         [Fact]

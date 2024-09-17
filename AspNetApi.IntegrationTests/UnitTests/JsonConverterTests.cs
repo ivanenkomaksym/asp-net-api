@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests.UnitTests
+namespace AspNetApi.UnitTests
 {
     // ========================================================================
     // ==============Deserialization of interface not supported================
