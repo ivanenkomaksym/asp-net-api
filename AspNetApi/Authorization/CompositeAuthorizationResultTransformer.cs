@@ -6,6 +6,7 @@ namespace AspNetApi.Authorization
     public class CompositeAuthorizationResultTransformer : IAuthorizationMiddlewareResultHandler
     {
         private readonly IEnumerable<IAuthorizationMiddlewareResultHandler> _handlers;
+        private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new();
 
         public CompositeAuthorizationResultTransformer(IEnumerable<IAuthorizationMiddlewareResultHandler> handlers)
         {
@@ -24,8 +25,7 @@ namespace AspNetApi.Authorization
                     return;
             }
 
-            // Continue the request pipeline if no response was started
-            await next(context);
+            await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
         }
     }
 

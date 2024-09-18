@@ -28,15 +28,16 @@ builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler>(sp =>
 // Add custom authorization policy
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = "CustomScheme";
-    options.DefaultChallengeScheme = "CustomScheme";
+    options.DefaultAuthenticateScheme = DummySuccessAuthenticationHandler.Name;
+    options.DefaultChallengeScheme = DummySuccessAuthenticationHandler.Name;
 })
-.AddScheme<AuthenticationSchemeOptions, AlwaysSuccessAuthenticationHandler>("CustomScheme", null);
+.AddScheme<AuthenticationSchemeOptions, DummySuccessAuthenticationHandler>(DummySuccessAuthenticationHandler.Name, null);
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("HealthCheckPolicy", policy =>
     {
-        policy.AuthenticationSchemes.Add("CustomScheme");
+        policy.AuthenticationSchemes.Add(DummySuccessAuthenticationHandler.Name);
+        policy.RequireAuthenticatedUser();
         policy.AddRequirements(new SecretHeaderRequirement("secret_header", "expected_value"));
         policy.AddRequirements(new MinimumAgeRequirement("age", 18));
     });

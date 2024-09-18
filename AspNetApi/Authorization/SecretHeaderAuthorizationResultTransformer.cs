@@ -19,14 +19,6 @@ namespace AspNetApi.Authorization
             // If the authorization failed
             if (!authorizeResult.Succeeded)
             {
-                if (context.User?.Identity?.IsAuthenticated == false)
-                {
-                    // Handle authentication failure
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync("Authentication required.");
-                    return;
-                }
-
                 if (authorizeResult.AuthorizationFailure?.FailureReasons.FirstOrDefault() is SecretHeaderFailureReason secretHeaderFailureReason)
                 {
                     // Handle authorization failure with custom message
