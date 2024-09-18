@@ -1,4 +1,5 @@
 ﻿using AspNetApi.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using NSubstitute;
@@ -13,30 +14,19 @@ namespace AspNetApi.UnitTests
         private readonly CompositeAuthorizationResultTransformer _transformer = new([new SecretHeaderAuthorizationResultTransformer(), new MinimumAgeAuthorizationResultTransformer()]);
 
         [Fact]
-        public async Task HandleAsync_ShouldReturn401_WhenAuthenticationFails()
-        {
-            // Arrange
-            var context = new DefaultHttpContext();
-            context.Response.Body = new MemoryStream();
-            context.User = new ClaimsPrincipal(new ClaimsIdentity()); // Not authenticated
-            var next = Substitute.For<RequestDelegate>();
-            var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-            var authorizeResult = PolicyAuthorizationResult.Forbid();
-
-            // Act
-            await _transformer.HandleAsync(next, context, policy, authorizeResult);
-
-            // Assert
-            Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
-            var responseContent = GetResponseBody(context.Response);
-            Assert.Contains("Authentication required.", responseContent);
-        }
-
-        [Fact]
         public async Task HandleAsync_ShouldReturn403_WhenInvalidSecretHeader()
         {
             // Arrange
             var context = new DefaultHttpContext();
+
+            // Mock IAuthenticationService
+            var authenticationService = Substitute.For<IAuthenticationService>();
+
+            // Mock IServiceProvider and set up RequestServices
+            var serviceProvider = Substitute.For<IServiceProvider>();
+            serviceProvider.GetService(typeof(IAuthenticationService)).Returns(authenticationService);
+
+            context.RequestServices = serviceProvider;
             context.Response.Body = new MemoryStream();
             context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.Name, "TestUser") }, "TestAuthScheme")); // Authenticated
             var next = Substitute.For<RequestDelegate>();
@@ -60,6 +50,15 @@ namespace AspNetApi.UnitTests
         {
             // Arrange
             var context = new DefaultHttpContext();
+
+            // Mock IAuthenticationService
+            var authenticationService = Substitute.For<IAuthenticationService>();
+
+            // Mock IServiceProvider and set up RequestServices
+            var serviceProvider = Substitute.For<IServiceProvider>();
+            serviceProvider.GetService(typeof(IAuthenticationService)).Returns(authenticationService);
+
+            context.RequestServices = serviceProvider;
             context.Response.Body = new MemoryStream();
             context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.Name, "TestUser") }, "TestAuthScheme")); // Authenticated
             var next = Substitute.For<RequestDelegate>();

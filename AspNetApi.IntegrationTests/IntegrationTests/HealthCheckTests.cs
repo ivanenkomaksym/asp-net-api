@@ -8,11 +8,29 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
     public sealed class HealthCheckTests(ITestOutputHelper output)
     {
         [Fact]
+        public async Task HealthCheck_WithoutAuthorizationHeader_ShouldFail()
+        {
+            // Arrange
+            using var application = new ApplicationBase(output);
+            var client = application.CreateClient();
+
+            // Act
+            var response = await client.GetAsync("/healthz");
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
         public async Task HealthCheck_WithoutSecretHeader_ShouldFail()
         {
             // Arrange
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
+
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
 
             // Act
             var response = await client.GetAsync("/healthz");
@@ -31,6 +49,7 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
 
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
             client.DefaultRequestHeaders.Add("secret_header", "incorrect_value");
 
             // Act
@@ -50,6 +69,7 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
 
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
             client.DefaultRequestHeaders.Add("secret_header", "expected_value");
 
             // Act
@@ -69,6 +89,7 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
 
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
             client.DefaultRequestHeaders.Add("secret_header", "expected_value");
             client.DefaultRequestHeaders.Add("age", "incorrect");
 
@@ -89,6 +110,7 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
 
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
             client.DefaultRequestHeaders.Add("secret_header", "expected_value");
             client.DefaultRequestHeaders.Add("age", "16");
 
@@ -109,6 +131,7 @@ namespace AspNetApi.IntegrationTests.IntegrationTests
             using var application = new ApplicationBase(output);
             var client = application.CreateClient();
 
+            client.DefaultRequestHeaders.Add("Authorization", "dummy_value");
             client.DefaultRequestHeaders.Add("secret_header", "expected_value");
             client.DefaultRequestHeaders.Add("age", "18");
 
