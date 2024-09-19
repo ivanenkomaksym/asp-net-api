@@ -28,6 +28,8 @@ namespace AspNetApi.Authorization
                     return;
                 }
             }
+
+            await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
         }
     }
 }

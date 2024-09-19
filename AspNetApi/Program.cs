@@ -17,13 +17,7 @@ builder.Services.AddSingleton<SecretHeaderAuthorizationResultTransformer>();
 builder.Services.AddSingleton<MinimumAgeAuthorizationResultTransformer>();
 
 // Register composite handler but don't make it part of the collection
-builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler>(sp =>
-{
-    var handler1 = sp.GetRequiredService<SecretHeaderAuthorizationResultTransformer>();
-    var handler2 = sp.GetRequiredService<MinimumAgeAuthorizationResultTransformer>();
-
-    return new CompositeAuthorizationResultTransformer([handler1, handler2]);
-});
+builder.Services.AddCompositeAuthorizationResultTransformer(typeof(SecretHeaderAuthorizationResultTransformer), typeof(MinimumAgeAuthorizationResultTransformer));
 
 // Add custom authorization policy
 builder.Services.AddAuthentication(options =>
