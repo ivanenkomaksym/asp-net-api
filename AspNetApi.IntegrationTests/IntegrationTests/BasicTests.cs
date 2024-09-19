@@ -10,7 +10,7 @@ using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests.IntegrationTests
+namespace AspNetApi.IntegrationTests
 {
     public class MyOptions
     {

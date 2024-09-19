@@ -3,7 +3,7 @@ using System.Net;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace AspNetApi.IntegrationTests.IntegrationTests
+namespace AspNetApi.IntegrationTests
 {
     public sealed class HealthCheckTests(ITestOutputHelper output)
     {
