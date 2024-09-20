@@ -14,6 +14,14 @@ namespace AspNetApi.UnitTests
     {
         private readonly CompositeAuthorizationResultTransformer _transformer = new([new SecretHeaderAuthorizationResultTransformer(), new MinimumAgeAuthorizationResultTransformer()]);
 
+        private class TestAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewareResultHandler
+        {
+            public Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         [Fact]
         public void ShouldRegister_CompositeAuthorizationResultTransformer_WithHandlers()
         {
@@ -48,6 +56,36 @@ namespace AspNetApi.UnitTests
             Assert.NotNull(handlers);
             Assert.Contains(handler1, handlers);
             Assert.Contains(handler2, handlers);
+        }
+
+        [Fact]
+        public void Should_Throw_When_Type_Does_Not_Implement_IAuthorizationMiddlewareResultHandler()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddCompositeAuthorizationResultTransformer(typeof(string)); // Invalid type
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService<IAuthorizationMiddlewareResultHandler>());
+
+            Assert.Equal("String does not implement IAuthorizationMiddlewareResultHandler.", exception.Message);
+        }
+
+        [Fact]
+        public void Should_Throw_When_Service_Is_Not_Registered()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+
+            // Act & Assert - Missing service should throw an exception
+            services.AddCompositeAuthorizationResultTransformer(typeof(TestAuthorizationMiddlewareResultHandler)); // Not registered
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Act & Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService<IAuthorizationMiddlewareResultHandler>());
+
+            Assert.Equal($"Service for {nameof(TestAuthorizationMiddlewareResultHandler)} could not be found.", exception.Message);
         }
 
         [Fact]
