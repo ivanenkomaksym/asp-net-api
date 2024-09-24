@@ -19,19 +19,32 @@ builder.Services.AddSingleton<MinimumAgeAuthorizationResultTransformer>();
 // Register composite handler but don't make it part of the collection
 builder.Services.AddCompositeAuthorizationResultTransformer(typeof(SecretHeaderAuthorizationResultTransformer), typeof(MinimumAgeAuthorizationResultTransformer));
 
+var authenticationOptions = builder.Configuration.GetSection(AspNetApi.Configuration.AuthenticationOptions.Name).Get<AspNetApi.Configuration.AuthenticationOptions>();
+
 // Add custom authorization policy
-builder.Services.AddAuthentication(options =>
+if (authenticationOptions != null && authenticationOptions.Enable)
 {
-    options.DefaultAuthenticateScheme = DummySuccessAuthenticationHandler.Name;
-    options.DefaultChallengeScheme = DummySuccessAuthenticationHandler.Name;
-})
-.AddScheme<AuthenticationSchemeOptions, DummySuccessAuthenticationHandler>(DummySuccessAuthenticationHandler.Name, null);
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = DummySuccessAuthenticationHandler.Name;
+        options.DefaultChallengeScheme = DummySuccessAuthenticationHandler.Name;
+    })
+    .AddScheme<AuthenticationSchemeOptions, DummySuccessAuthenticationHandler>(DummySuccessAuthenticationHandler.Name, null);
+}
+else
+{
+    builder.Services.AddAuthentication(AllowAnonymousAuthenticationHandler.Name)
+        .AddScheme<AuthenticationSchemeOptions, AllowAnonymousAuthenticationHandler>(AllowAnonymousAuthenticationHandler.Name, options => { });
+}
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("HealthCheckPolicy", policy =>
     {
-        policy.AuthenticationSchemes.Add(DummySuccessAuthenticationHandler.Name);
-        policy.RequireAuthenticatedUser();
+        if (authenticationOptions != null && authenticationOptions.Enable)
+        {
+            policy.RequireAuthenticatedUser();
+        }
         policy.AddRequirements(new SecretHeaderRequirement("secret_header", "expected_value"));
         policy.AddRequirements(new MinimumAgeRequirement("age", 18));
     });
@@ -82,6 +95,7 @@ app.UseCors(builder =>
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
