@@ -9,8 +9,6 @@ namespace AspNetApi.Authorization
     /// </summary>
     public class SecretHeaderAuthorizationResultTransformer : IAuthorizationMiddlewareResultHandler
     {
-        private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new AuthorizationMiddlewareResultHandler();
-
         public async Task HandleAsync(RequestDelegate next,
                                       HttpContext context,
                                       AuthorizationPolicy policy,
@@ -25,11 +23,8 @@ namespace AspNetApi.Authorization
                     var failureReason = secretHeaderFailureReason.Message;
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     await context.Response.WriteAsync($"Authorization failed: {failureReason}");
-                    return;
                 }
             }
-
-            await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
         }
     }
 }

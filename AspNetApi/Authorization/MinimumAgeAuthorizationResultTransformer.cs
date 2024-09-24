@@ -5,8 +5,6 @@ namespace AspNetApi.Authorization
 {
     public class MinimumAgeAuthorizationResultTransformer : IAuthorizationMiddlewareResultHandler
     {
-        private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new AuthorizationMiddlewareResultHandler();
-
         public async Task HandleAsync(RequestDelegate next,
                                       HttpContext context,
                                       AuthorizationPolicy policy,
@@ -21,11 +19,8 @@ namespace AspNetApi.Authorization
                     var failureReason = minimumAgeFailureReason.Message;
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     await context.Response.WriteAsync($"Authorization failed: {failureReason}");
-                    return;
                 }
             }
-
-            await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
         }
     }
 }
