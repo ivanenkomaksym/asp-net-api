@@ -144,5 +144,25 @@ namespace AspNetApi.IntegrationTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("Healthy", result);
         }
+
+        [Fact]
+        public async Task HealthCheck_WithDisabledAuthnSecretHeaderAndMinimumAge_ShouldSucceed()
+        {
+            // Arrange
+            using var application = new ApplicationBase(output, false);
+            var client = application.CreateClient();
+
+            client.DefaultRequestHeaders.Add("secret_header", "expected_value");
+            client.DefaultRequestHeaders.Add("age", "18");
+
+            // Act
+            var response = await client.GetAsync("/healthz");
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("Healthy", result);
+        }
     }
 }
