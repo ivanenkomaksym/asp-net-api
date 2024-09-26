@@ -4,6 +4,6 @@
     {
         public override CategoryType CategoryType => CategoryType.Movies;
 
-        public uint NofMinutes { get; set; }
+        public required uint NofMinutes { get; set; }
     }
 }

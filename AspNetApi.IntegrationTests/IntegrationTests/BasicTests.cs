@@ -114,7 +114,7 @@ namespace AspNetApi.IntegrationTests
             var serviceProviderConverter = new ServiceProviderDummyConverter(httpContextAccessor, serviceProvdier);
 
             // Setup JsonOptions
-            var jsonOptions = new JsonSerializerOptions { };
+            var jsonOptions = new JsonSerializerOptions(JsonOptions);
             jsonOptions.Converters.Add(serviceProviderConverter);
 
             // Act
@@ -133,9 +133,6 @@ namespace AspNetApi.IntegrationTests
             using var application = new ApplicationBase(Output);
             var client = application.CreateClient();
 
-            // Setup JsonOptions
-            var jsonOptions = new JsonSerializerOptions { };
-
             // Act
             var json = "{ " +
                 "\"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", " +
@@ -146,7 +143,8 @@ namespace AspNetApi.IntegrationTests
                 "\"price\": 0, " +
                 "\"categoryInfo\": { " +
                     "\"categoryType\": \"Books\", " +
-                    "\"nofPages\": 500 " +
+                    "\"nofPages\": 500, " +
+                    "\"authors\": [\"Author\"] " +
                 "}, " +
                 "\"currency\": \"USD\" " +
             "}";
@@ -154,7 +152,7 @@ namespace AspNetApi.IntegrationTests
             using var stringContent = new StringContent(json, EncodingType, "application/json");
             var response = await client.PostAsync("/api/Products", stringContent);
 
-            var result = await response.Content.ReadFromJsonAsync<Product>(jsonOptions);
+            var result = await response.Content.ReadFromJsonAsync<Product>(JsonOptions);
 
             // Assert
             response.EnsureSuccessStatusCode(); // Status Code 200-299
@@ -166,9 +164,6 @@ namespace AspNetApi.IntegrationTests
             // Arrange
             using var application = new ApplicationBase(Output);
             var client = application.CreateClient();
-
-            // Setup JsonOptions
-            var jsonOptions = new JsonSerializerOptions { };
 
             // Act
             var json = "{ " +
@@ -201,9 +196,6 @@ namespace AspNetApi.IntegrationTests
             using var application = new ApplicationBase(Output);
             var client = application.CreateClient();
 
-            // Setup JsonOptions
-            var jsonOptions = new JsonSerializerOptions { };
-
             // Act
             var json = "{ " +
                 "\"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", " +
@@ -225,45 +217,10 @@ namespace AspNetApi.IntegrationTests
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var validationError = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
 
-            Assert.Contains($"{nameof(BooksCategory)} requires '{StringConverter.ToCamelCaseFromPascal(nameof(BooksCategory.NofPages))}'.", validationError.Errors["$"]);
-        }
-
-        [Fact]
-        public async Task ExtraUnsupportedProperty_ShouldThrowJsonException()
-        {
-            // Arrange
-            using var application = new ApplicationBase(Output);
-            var client = application.CreateClient();
-
-            // Setup JsonOptions
-            var jsonOptions = new JsonSerializerOptions { };
-
-            // Act
-            var json = "{ " +
-                "\"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", " +
-                "\"name\": \"string\", " +
-                "\"category\": \"string\", " +
-                "\"summary\": \"string\", " +
-                "\"imageFile\": \"string\", " +
-                "\"price\": 0, " +
-                "\"categoryInfo\": { " +
-                    "\"categoryType\": \"Movies\", " +
-                    "\"nofPages\": 500, " +
-                    "\"nofMinutes\": 120 " +
-                "}, " +
-                "\"currency\": \"USD\" " +
-            "}";
-
-            using var stringContent = new StringContent(json, EncodingType, "application/json");
-            var response = await client.PostAsync("/api/Products", stringContent);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var validationError = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
-
-            Assert.Contains($"{nameof(MoviesCategory)} contains unsupported properties.", validationError.Errors["$"]);
+            Assert.Contains("was missing required properties", validationError.Errors["$"].First());
         }
 
         private static readonly Encoding EncodingType = Encoding.UTF8;
+        private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 }

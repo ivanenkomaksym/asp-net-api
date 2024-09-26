@@ -74,57 +74,13 @@ namespace AspNetApi.Converters
                 if (!parseResult)
                     throw new JsonException($"Unknown {nameof(Product.CategoryInfo.CategoryType)}: {categoryTypePropString}.");
 
-                switch (categoryType)
+                return categoryType switch
                 {
-                    case CategoryType.Books:
-                        ValidateBooksCategory(rootElement);
-                        return JsonSerializer.Deserialize<BooksCategory>(rootElement.GetRawText(), options);
-
-                    case CategoryType.Movies:
-                        ValidateMoviesCategory(rootElement);
-                        return JsonSerializer.Deserialize<MoviesCategory>(rootElement.GetRawText(), options);
-
-                    default:
-                        throw new JsonException($"Unknown CategoryType: {categoryType}");
-                }
+                    CategoryType.Books => JsonSerializer.Deserialize<BooksCategory>(rootElement.GetRawText(), options),
+                    CategoryType.Movies => JsonSerializer.Deserialize<MoviesCategory>(rootElement.GetRawText(), options),
+                    _ => throw new JsonException($"Unknown CategoryType: {categoryType}"),
+                };
             }
-        }
-
-        private static void ValidateMoviesCategory(JsonElement element)
-        {
-            var propertyName = StringConverter.ToCamelCaseFromPascal(nameof(MoviesCategory.NofMinutes));
-            // Check for required properties
-            if (!element.TryGetProperty(propertyName, out _))
-            {
-                throw new JsonException($"{nameof(MoviesCategory)} requires '{propertyName}'.");
-            }
-
-            // Check for any unsupported properties
-            if (!HasExactNumberOfProperties(element, 1))
-            {
-                throw new JsonException($"{nameof(MoviesCategory)} contains unsupported properties.");
-            }
-        }
-
-        private static void ValidateBooksCategory(JsonElement element)
-        {
-            var propertyName = StringConverter.ToCamelCaseFromPascal(nameof(BooksCategory.NofPages));
-            // Check for required properties
-            if (!element.TryGetProperty(propertyName, out _))
-            {
-                throw new JsonException($"{nameof(BooksCategory)} requires '{propertyName}'.");
-            }
-
-            // Check for any unsupported properties
-            if (!HasExactNumberOfProperties(element, 2))
-            {
-                throw new JsonException($"{nameof(BooksCategory)} contains unsupported properties.");
-            }
-        }
-        
-        private static bool HasExactNumberOfProperties(JsonElement element, ushort nofProperties)
-        {
-            return element.ValueKind == JsonValueKind.Object && element.EnumerateObject().Count() == nofProperties;
         }
 
         public override void Write(Utf8JsonWriter writer, Product value, JsonSerializerOptions options)
@@ -148,7 +104,7 @@ namespace AspNetApi.Converters
             writer.WriteEndObject();
         }
 
-        private void WriteCategoryInfo(Utf8JsonWriter writer, CategoryBase categoryInfo, JsonSerializerOptions options)
+        private static void WriteCategoryInfo(Utf8JsonWriter writer, CategoryBase categoryInfo, JsonSerializerOptions options)
         {
             switch (categoryInfo)
             {
