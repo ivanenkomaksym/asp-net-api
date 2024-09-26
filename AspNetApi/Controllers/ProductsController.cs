@@ -1,8 +1,10 @@
-﻿using System.Net;
-using Microsoft.AspNetCore.Mvc;
+﻿using AspNetApi.Filters;
 using AspNetApi.Models;
 using AspNetApi.Repositories;
-using AspNetApi.Filters;
+using AspNetApi.Validation;
+using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Reflection;
 
 namespace AspNetApi.Controllers
 {
@@ -70,6 +72,7 @@ namespace AspNetApi.Controllers
 
         [HttpPost]
         [ProducesResponseType(typeof(Product), (int)HttpStatusCode.OK)]
+        [ServiceFilter(typeof(ProductValidationFilter))]
         public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
         {
             await _repository.CreateProduct(product);

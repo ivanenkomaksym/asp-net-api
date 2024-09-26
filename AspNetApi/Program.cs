@@ -3,6 +3,7 @@ using AspNetApi.Authorization;
 using AspNetApi.Converters;
 using AspNetApi.Data;
 using AspNetApi.Repositories;
+using AspNetApi.Validation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
@@ -66,6 +67,8 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.ConfigureOptions<ConfigureJsonOptions>();
+
+builder.Services.AddScoped<ProductValidationFilter>();
 
 var app = builder.Build();
 
