@@ -26,13 +26,7 @@ namespace AspNetApi.Tests
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
-            builder.ConfigureServices(services =>
-            {
-                services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
-
-                services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-                services.ConfigureOptions<ConfigureJsonOptions>();
-            }).ConfigureAppConfiguration(configurationBuilder =>
+            builder.ConfigureAppConfiguration(configurationBuilder =>
             {
                 var configuration = GetMemoryConfiguration();
                 if (configuration == null)
@@ -41,7 +35,13 @@ namespace AspNetApi.Tests
                 configurationBuilder.Sources.Clear();
                 var fromMemory = new MemoryConfigurationSource { InitialData = configuration };
                 configurationBuilder.Add(fromMemory);
-            });
+            }).ConfigureServices(services =>
+                {
+                    services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
+
+                    services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+                    services.ConfigureOptions<ConfigureJsonOptions>();
+                });
 
             return base.CreateHost(builder);
         }

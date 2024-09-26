@@ -13,7 +13,10 @@ namespace AspNetApi.Authorization
             // If the authorization failed
             if (!authorizeResult.Succeeded)
             {
-                if (authorizeResult.AuthorizationFailure?.FailureReasons.FirstOrDefault() is MinimumAgeFailureReason minimumAgeFailureReason)
+                var minimumAgeFailureReason = authorizeResult.AuthorizationFailure?.FailureReasons
+                    .OfType<MinimumAgeFailureReason>()
+                    .FirstOrDefault();
+                if (minimumAgeFailureReason != null)
                 {
                     // Handle authorization failure with custom message
                     var failureReason = minimumAgeFailureReason.Message;

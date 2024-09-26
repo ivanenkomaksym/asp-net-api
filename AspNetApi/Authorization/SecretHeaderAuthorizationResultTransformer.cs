@@ -17,7 +17,10 @@ namespace AspNetApi.Authorization
             // If the authorization failed
             if (!authorizeResult.Succeeded)
             {
-                if (authorizeResult.AuthorizationFailure?.FailureReasons.FirstOrDefault() is SecretHeaderFailureReason secretHeaderFailureReason)
+                var secretHeaderFailureReason = authorizeResult.AuthorizationFailure?.FailureReasons
+                    .OfType<SecretHeaderFailureReason>()
+                    .FirstOrDefault();
+                if (secretHeaderFailureReason != null)
                 {
                     // Handle authorization failure with custom message
                     var failureReason = secretHeaderFailureReason.Message;

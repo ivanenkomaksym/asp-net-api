@@ -166,7 +166,7 @@ namespace AspNetApi.UnitTests
             await _transformer.HandleAsync(next, context, policy, authorizeResult);
 
             // Assert
-            await next.Received(3).Invoke(context);
+            await next.Received(1).Invoke(context);
         }
 
         private string GetResponseBody(HttpResponse response)
