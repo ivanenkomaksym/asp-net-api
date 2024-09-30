@@ -62,5 +62,75 @@ namespace AspNetApi.IntegrationTests
             Assert.True(validationErrors.Errors.ContainsKey("Authors"), "Expected validation error for 'Authors'.");
             Assert.Contains("The field Authors must be a string or array type with a minimum length of '1'.", validationErrors.Errors["Authors"]);
         }
+
+        public class MockHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _sendAsync;
+
+            public MockHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync)
+            {
+                _sendAsync = sendAsync;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                return _sendAsync(request, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task Should_Return_Mocked_BadRequestResponse_With_NSubstitute()
+        {
+            // Arrange: Create the mock response with validation error details
+            var errorDetails = new ValidationProblemDetails
+            {
+                Title = "One or more validation errors occurred.",
+                Status = StatusCodes.Status400BadRequest,
+                Errors = new Dictionary<string, string[]>
+                {
+                    { "NofPages", new[] { "The field NofPages must be greater than 0." } },
+                    { "Authors", new[] { "The Authors field must have at least 1 element." } }
+                }
+            };
+
+            // Serialize the mock response content
+            var mockResponseContent = new StringContent(JsonSerializer.Serialize(errorDetails), Encoding.UTF8, "application/json");
+
+            var mockHandler = new MockHttpMessageHandler((request, cancellationToken) =>
+            {
+                return Task.FromResult(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = mockResponseContent
+                });
+            });
+
+            // Create HttpClient using the mocked handler
+            var client = new HttpClient(mockHandler)
+            {
+                // Set the BaseAddress to a valid URI
+                BaseAddress = new Uri("http://localhost")
+            };
+
+            // Act: Send a POST request to the product endpoint
+            var response = await client.PostAsync("/api/products", new StringContent("{}"));
+
+            // Assert: Check if the response is a BadRequest and contains the expected error details
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var validationErrors = JsonSerializer.Deserialize<ValidationProblemDetails>(responseContent, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            // Check if the validation errors match what we mocked
+            Assert.NotNull(validationErrors);
+            Assert.Contains("NofPages", validationErrors.Errors.Keys);
+            Assert.Contains("The field NofPages must be greater than 0.", validationErrors.Errors["NofPages"]);
+
+            Assert.Contains("Authors", validationErrors.Errors.Keys);
+            Assert.Contains("The Authors field must have at least 1 element.", validationErrors.Errors["Authors"]);
+        }
     }
 }
