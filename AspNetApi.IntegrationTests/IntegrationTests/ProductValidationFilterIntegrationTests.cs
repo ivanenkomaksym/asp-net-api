@@ -1,6 +1,8 @@
 ﻿using AspNetApi.Models;
 using AspNetApi.Tests;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.TestHost;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +12,12 @@ using Xunit.Abstractions;
 
 namespace AspNetApi.IntegrationTests
 {
+    /// <summary>
+    /// 3 ways to do integration test for error handling:
+    /// 1. Using <see cref="WebApplicationFactory"/> implementation for existing <see cref="Program"/>.
+    /// 2. Mocking <see cref="HttpMessageHandler"/>.
+    /// 3. Using in-memory test server with minimal API and filter applied.
+    /// </summary>
     public class ProductValidationFilterIntegrationTests(ITestOutputHelper output)
     {
         [Fact]
@@ -131,6 +139,63 @@ namespace AspNetApi.IntegrationTests
 
             Assert.Contains("Authors", validationErrors.Errors.Keys);
             Assert.Contains("The Authors field must have at least 1 element.", validationErrors.Errors["Authors"]);
+        }
+
+        [Fact]
+        public async Task Should_Return_BadRequest_With_ValidationError()
+        {
+            // Arrange
+            using var client = CreateClientWithDummyActionAndFilter();
+
+            // Act: Send a POST request to the test route
+            var response = await client.PostAsync("/test", null);
+
+            // Assert: Ensure the response is BadRequest
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Deserialize the validation error response
+            var content = await response.Content.ReadAsStringAsync();
+            var validationProblemDetails = JsonSerializer.Deserialize<ValidationProblemDetails>(content, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            // Assert: Verify the error details
+            Assert.NotNull(validationProblemDetails);
+            Assert.Equal("Validation failed", validationProblemDetails.Title);
+            Assert.Contains("Field", validationProblemDetails.Errors.Keys);
+            Assert.Contains("This field is required.", validationProblemDetails.Errors["Field"]);
+        }
+
+        private static HttpClient CreateClientWithDummyActionAndFilter()
+        {
+            var builder = WebHost.CreateDefaultBuilder()
+                .Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        // Set up a simple dummy route for testing
+                        endpoints.MapPost("/test", async context =>
+                        {
+                            await context.Response.WriteAsync("Dummy action");
+                        })
+                        .AddEndpointFilter(async (invocationContext, next) =>
+                        {
+                            var errorResponse = new ValidationProblemDetails
+                            {
+                                Title = "Validation failed",
+                                Status = StatusCodes.Status400BadRequest,
+                                Errors = { { "Field", new[] { "This field is required." } } }
+                            };
+
+                            return Results.BadRequest(errorResponse);
+                        });
+                    });
+                });
+
+            var server = new TestServer(builder);
+            return server.CreateClient();
         }
     }
 }
