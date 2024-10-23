@@ -1,6 +1,7 @@
 ﻿using AspNetApi.Configuration;
 using AspNetApi.Controllers;
 using AspNetApi.Converters;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration.Memory;
 using Xunit.Abstractions;
@@ -36,14 +37,47 @@ namespace AspNetApi.Tests
                 var fromMemory = new MemoryConfigurationSource { InitialData = configuration };
                 configurationBuilder.Add(fromMemory);
             }).ConfigureServices(services =>
+            {
+                services.AddLogging(logging =>
                 {
-                    services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
-
-                    services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-                    services.ConfigureOptions<ConfigureJsonOptions>();
+                    logging.AddProvider(new XunitLoggerProvider(Output)); // Use your custom logger
                 });
 
+                services.AddHttpLogging(options =>
+                {
+                    options.LoggingFields = HttpLoggingFields.RequestPath
+                                            | HttpLoggingFields.RequestMethod
+                                            | HttpLoggingFields.RequestQuery
+                                            | HttpLoggingFields.RequestHeaders
+                                            | HttpLoggingFields.RequestBody
+                                            | HttpLoggingFields.ResponseHeaders
+                                            | HttpLoggingFields.ResponseBody
+                                            | HttpLoggingFields.ResponseStatusCode;
+                });
+
+                services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
+                services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+                services.ConfigureOptions<ConfigureJsonOptions>();
+            });
+
             return base.CreateHost(builder);
+        }
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            // Configure the web host, adding middleware like HTTP logging
+            builder.Configure(app =>
+            {
+                // Use the HTTP logging middleware to log request/response details
+                app.UseHttpLogging();
+
+                // Your application-specific middleware here (controllers, etc.)
+                app.UseRouting();
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                });
+            });
         }
 
         private readonly bool UseAuthentication;
