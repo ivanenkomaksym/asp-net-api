@@ -6,6 +6,7 @@ using AspNetApi.Repositories;
 using AspNetApi.Validation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
@@ -13,6 +14,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestPath
+                            | HttpLoggingFields.RequestMethod
+                            | HttpLoggingFields.RequestQuery
+                            | HttpLoggingFields.RequestHeaders
+                            | HttpLoggingFields.RequestBody
+                            | HttpLoggingFields.ResponseHeaders
+                            | HttpLoggingFields.ResponseBody
+                            | HttpLoggingFields.ResponseStatusCode;
+});
 
 builder.Services.AddSingleton<SecretHeaderAuthorizationResultTransformer>();
 builder.Services.AddSingleton<MinimumAgeAuthorizationResultTransformer>();
@@ -75,6 +88,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseHttpLogging();
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
