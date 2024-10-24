@@ -130,7 +130,7 @@ namespace AspNetApi.IntegrationTests
         public async Task CreateProduct()
         {
             // Arrange
-            using var application = new ApplicationBase(Output);
+            using var application = new ApplicationBase(Output, useAuthentication: true, useHttpLogging: true);
             var client = application.CreateClient();
 
             // Act

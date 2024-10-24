@@ -11,10 +11,11 @@ namespace AspNetApi.Tests
     internal class ApplicationBase : WebApplicationFactory<Program>
     {
         private readonly ITestOutputHelper Output;
-        public ApplicationBase(ITestOutputHelper output, bool useAuthentication = true)
+        public ApplicationBase(ITestOutputHelper output, bool useAuthentication = true, bool useHttpLogging = false)
         {
             Output = output;
             UseAuthentication = useAuthentication;
+            UseHttpLogging = useHttpLogging;
         }
 
         protected virtual IEnumerable<KeyValuePair<string, string>> GetMemoryConfiguration()
@@ -38,22 +39,25 @@ namespace AspNetApi.Tests
                 configurationBuilder.Add(fromMemory);
             }).ConfigureServices(services =>
             {
-                services.AddLogging(logging =>
+                if (UseHttpLogging)
                 {
-                    logging.AddProvider(new XunitLoggerProvider(Output)); // Use your custom logger
-                });
+                    services.AddLogging(logging =>
+                    {
+                        logging.AddProvider(new XunitLoggerProvider(Output)); // Use your custom logger
+                    });
 
-                services.AddHttpLogging(options =>
-                {
-                    options.LoggingFields = HttpLoggingFields.RequestPath
-                                            | HttpLoggingFields.RequestMethod
-                                            | HttpLoggingFields.RequestQuery
-                                            | HttpLoggingFields.RequestHeaders
-                                            | HttpLoggingFields.RequestBody
-                                            | HttpLoggingFields.ResponseHeaders
-                                            | HttpLoggingFields.ResponseBody
-                                            | HttpLoggingFields.ResponseStatusCode;
-                });
+                    services.AddHttpLogging(options =>
+                    {
+                        options.LoggingFields = HttpLoggingFields.RequestPath
+                                                | HttpLoggingFields.RequestMethod
+                                                | HttpLoggingFields.RequestQuery
+                                                | HttpLoggingFields.RequestHeaders
+                                                | HttpLoggingFields.RequestBody
+                                                | HttpLoggingFields.ResponseHeaders
+                                                | HttpLoggingFields.ResponseBody
+                                                | HttpLoggingFields.ResponseStatusCode;
+                    });
+                }
 
                 services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
                 services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -68,8 +72,11 @@ namespace AspNetApi.Tests
             // Configure the web host, adding middleware like HTTP logging
             builder.Configure(app =>
             {
-                // Use the HTTP logging middleware to log request/response details
-                app.UseHttpLogging();
+                if (UseHttpLogging)
+                {
+                    // Use the HTTP logging middleware to log request/response details
+                    app.UseHttpLogging();
+                }
 
                 // Your application-specific middleware here (controllers, etc.)
                 app.UseRouting();
@@ -77,9 +84,12 @@ namespace AspNetApi.Tests
                 {
                     endpoints.MapControllers();
                 });
-            });
+            }).ConfigureServices(services => { })
+            .ConfigureLogging(logging => { })
+            .ConfigureAppConfiguration(configurationBuilder => { });
         }
 
         private readonly bool UseAuthentication;
+        private readonly bool UseHttpLogging;
     }
 }
