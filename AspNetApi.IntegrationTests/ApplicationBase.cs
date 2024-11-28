@@ -67,28 +67,6 @@ namespace AspNetApi.Tests
             return base.CreateHost(builder);
         }
 
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            // Configure the web host, adding middleware like HTTP logging
-            builder.Configure(app =>
-            {
-                if (UseHttpLogging)
-                {
-                    // Use the HTTP logging middleware to log request/response details
-                    app.UseHttpLogging();
-                }
-
-                // Your application-specific middleware here (controllers, etc.)
-                app.UseRouting();
-                app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapControllers();
-                });
-            }).ConfigureServices(services => { })
-            .ConfigureLogging(logging => { })
-            .ConfigureAppConfiguration(configurationBuilder => { });
-        }
-
         private readonly bool UseAuthentication;
         private readonly bool UseHttpLogging;
     }

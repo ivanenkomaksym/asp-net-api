@@ -164,7 +164,7 @@ namespace AspNetApi.UnitTests
 
             // Assert
             Assert.DoesNotContain("Base1Value", json);
-            Assert.Contains("Deserialization of interface types is not supported.", exception.Message);
+            Assert.Contains("Deserialization of interface or abstract types is not supported.", exception.Message);
         }
 
         [Fact]

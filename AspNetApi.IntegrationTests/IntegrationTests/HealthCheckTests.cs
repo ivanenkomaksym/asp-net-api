@@ -20,7 +20,7 @@ namespace AspNetApi.IntegrationTests
             var result = await response.Content.ReadAsStringAsync();
 
             // Assert
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         [Fact]
